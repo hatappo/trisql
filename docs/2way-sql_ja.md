@@ -267,6 +267,7 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 |---|---|---|
 | `$` スカラー | サンプルの直後のキャスト > Describe のパラメータ型 > サンプルリテラルの型 | `default-to` 付きなら optional |
 | `$` コレクション | 要素型の配列 | 同上 |
+| `if` の分岐内の `$` / `^` / `!` | 同上 | optional（分岐が選ばれたときだけ要る） |
 | `^` | サンプルの型（`string` または `number`） | なし |
 | `!` | `string` | なし |
 | `if` の裸の識別子（他で未使用） | `boolean \| null \| undefined` | optional |
@@ -279,6 +280,8 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 ### 9.4 Row
 
 - 列の名前と型は Describe の RowDescription から。列名は snake_case のまま。
+- 型 OID から TS 型への対応は `pg`（node-postgres）の既定の出力に合わせる。`int2` `int4` `float4` `float8` は `number`、`int8` `numeric` は `string`、`text` `varchar` `uuid` は `string`、`bool` は `boolean`、`date` `timestamp` `timestamptz` は `Date`、`json` `jsonb` は `unknown`、`bytea` は `Buffer`、enum はラベルの union、配列は要素型の配列。それ以外は `unknown`。
+- PGlite は `int8` を `BigInt`（安全な範囲なら `number`）で返すなど `pg` と異なるが、型表は `pg` を基準にする。
 - nullability は由来テーブルの `pg_attribute.attnotnull` から。式由来の列（由来テーブルなし）は nullable。
 - 文に `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN` が含まれる場合、FROM の先頭以外のテーブル由来の列は保守的に nullable とする。（将来、構文木を導入して正確に判定する）
 - `RETURNING` のない DML は `Row` を持たない。
@@ -288,7 +291,7 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 `if` / `for` は WHERE、SET、VALUES、ORDER BY、LIMIT 内で使う前提。
 SELECT リストの中で使った場合の列形状の変化は v1 では追わず、サンプル描画の形を `Row` とする。
 
-## 10. ランタイム API（計画）
+## 10. ランタイム API
 
 ```ts
 import getById from "./sql/users/crud/get-by-id.sql";

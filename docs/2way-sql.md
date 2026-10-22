@@ -267,6 +267,7 @@ A table mapping each character of the canonical rendering back to its template o
 |---|---|---|
 | scalar `$` | cast after the sample > Describe parameter type > sample literal type | with `default-to` |
 | collection `$` | array of the element type | same |
+| `$` / `^` / `!` inside an `if` branch | as above | optional (needed only when the branch is taken) |
 | `^` | the sample's type (`string` or `number`) | no |
 | `!` | `string` | no |
 | bare identifier in `if` (not used elsewhere) | `boolean \| null \| undefined` | yes |
@@ -279,6 +280,8 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 ### 9.4 Row
 
 - Column names and types come from the RowDescription of Describe. Names stay snake_case.
+- Type OIDs map to TypeScript types following the default output of `pg` (node-postgres): `int2` `int4` `float4` `float8` are `number`, `int8` and `numeric` are `string`, `text` `varchar` `uuid` are `string`, `bool` is `boolean`, `date` `timestamp` `timestamptz` are `Date`, `json` `jsonb` are `unknown`, `bytea` is `Buffer`, an enum is the union of its labels, an array is an array of its element type. Anything else is `unknown`.
+- PGlite returns `int8` as a `BigInt` (or `number` when safe) and differs from `pg` in a few places, but the table follows `pg`.
 - Nullability comes from `pg_attribute.attnotnull` of the source table. A column with no source table (an expression) is nullable.
 - When the statement contains `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN`, columns from any table other than the first in `FROM` are conservatively nullable. (A parse tree will make this exact later.)
 - A DML statement without `RETURNING` has no `Row`.
@@ -288,7 +291,7 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 `if` / `for` are expected inside WHERE, SET, VALUES, ORDER BY and LIMIT.
 A branch inside the SELECT list is not tracked in v1; the sample rendering's shape is the `Row`.
 
-## 10. Runtime API (planned)
+## 10. Runtime API
 
 ```ts
 import getById from "./sql/users/crud/get-by-id.sql";
