@@ -49,9 +49,11 @@ npm install -D typescript@beta @electric-sql/pglite
 
 ```sh
 tsc --noEmit --runExternalCode              # type check
-node --import tysql/register main.ts        # run
+node --import tysql/register main.ts        # run (plain Node)
 npx tysql generate                          # write CRUD templates into sql/<table>/crud/
 ```
+
+With a bundler, add the plugin instead of the Node preload: `tysql/esbuild` (also for `Bun.build`) or `tysql/vite`.
 
 ## Development
 
