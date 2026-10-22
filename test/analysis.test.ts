@@ -39,7 +39,7 @@ describe("analyze", () => {
     const r = await run(
       "SELECT id, email, name, status, tags FROM users WHERE id = /*$id*/1 AND created_at > /*$since*/'2024-01-01'::timestamptz",
     );
-    assert.equal(r.params, "{ id: string; since: Date }");
+    assert.equal(r.params, "{ id: string | number | bigint; since: Date | string }");
     assert.equal(
       r.row,
       '{ id: string; email: string; name: string | null; status: "active" | "inactive"; tags: string[] }',
@@ -49,7 +49,7 @@ describe("analyze", () => {
 
   it("expression columns are nullable, collections become arrays", async () => {
     const r = await run("SELECT count(*)::int AS n, max(name) AS m FROM users WHERE id IN /*$ids*/(1, 2)");
-    assert.equal(r.params, "{ ids: string[] }");
+    assert.equal(r.params, "{ ids: (string | number | bigint)[] }");
     assert.equal(r.row, "{ n: number | null; m: string | null }");
   });
 
@@ -62,7 +62,7 @@ describe("analyze", () => {
 
   it("DML without RETURNING has no row; VALUES accepts DEFAULT; default-to is optional", async () => {
     const r = await run("INSERT INTO users (id, email) VALUES (/*$id default-to */DEFAULT, /*$email*/'a')");
-    assert.equal(r.params, "{ id?: string | DefaultValue; email: string | DefaultValue }");
+    assert.equal(r.params, "{ id?: string | number | bigint | DefaultValue; email: string | DefaultValue }");
     assert.equal(r.row, "never");
     const returning = await run("INSERT INTO users (email) VALUES (/*$email*/'a') RETURNING id");
     assert.equal(returning.row, "{ id: string }");
@@ -74,7 +74,7 @@ describe("analyze", () => {
     );
     assert.equal(
       r.params,
-      "{ active?: boolean | null | undefined; q: string | LikePattern; email: string; orderBy: string; limit: string | AllValue }",
+      "{ active?: boolean | null | undefined; q: string | LikePattern; email: string; orderBy: string; limit: string | number | bigint | AllValue }",
     );
   });
 
@@ -89,7 +89,7 @@ describe("analyze", () => {
     );
     assert.equal(
       r.params,
-      "{ updates: Array<{ name: string; value: string | DefaultValue }> | Record<string, string | DefaultValue>; where: { id: string } }",
+      "{ updates: Array<{ name: string; value: string | DefaultValue }> | Record<string, string | DefaultValue>; where: { id: string | number | bigint } }",
     );
     assert.equal(r.row, "never");
   });

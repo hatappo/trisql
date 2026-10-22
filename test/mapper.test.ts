@@ -39,7 +39,7 @@ describe("mapper handlers", () => {
     const sql = "SELECT id, name FROM users WHERE id = /*$id*/1";
     const t = await handlers.transform({ fileName: join(dir, "x.sql"), content: sql, projectHandle: "h1" });
     assert.equal(t.extension, ".ts");
-    assert.match(t.text, /export type Params = \{ id: string \};/);
+    assert.match(t.text, /export type Params = \{ id: string \| number \| bigint \};/);
     assert.match(t.text, /export type Row = \{ id: string; name: string \| null \};/);
     assert.deepEqual(t.diagnostics, []);
     assert.deepEqual(t.mappings, [[0, t.text.length, 0, sql.length, 1, 8 | 16 | 32]]);
@@ -90,7 +90,7 @@ describe("tsc --runExternalCode", () => {
       lines.map((l) => l.replace(/^.*main\.ts/, "main.ts")),
       [
         "main.ts(6,25): error TS2353: Object literal may only specify known properties, and 'nope' does not exist in type 'Params'.",
-        "main.ts(8,25): error TS2322: Type 'number' is not assignable to type 'string'.",
+        "main.ts(8,25): error TS2322: Type 'boolean' is not assignable to type 'string | number | bigint'.",
         "main.ts(11,15): error TS2339: Property 'missing' does not exist on type 'Row'.",
       ],
     );

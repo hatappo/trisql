@@ -118,3 +118,29 @@ export async function relationOid(describer: Describer, name: string): Promise<n
     return null;
   }
 }
+
+/**
+ * パラメータ（入力）の型。出力より広く、ドライバが文字列化して送れる値を受け付ける。
+ * `int8` / `numeric` は `string | number | bigint`、日時は `Date | string`。
+ */
+const INPUT_OVERRIDE: Readonly<Record<number, string>> = {
+  20: "string | number | bigint", // int8
+  1700: "string | number | bigint", // numeric
+  790: "string | number", // money
+  1082: "Date | string", // date
+  1114: "Date | string", // timestamp
+  1184: "Date | string", // timestamptz
+  17: "Buffer | Uint8Array", // bytea
+};
+
+export function tsInputTypeOf(oid: number, types: Map<number, PgType>): string {
+  const override = INPUT_OVERRIDE[oid];
+  if (override !== undefined) return override;
+  const t = types.get(oid);
+  if (t && t.typtype === "d" && t.base !== 0) return tsInputTypeOf(t.base, types);
+  if (t && t.category === "A" && t.elem !== 0) {
+    const elem = tsInputTypeOf(t.elem, types);
+    return elem.includes(" | ") ? `(${elem})[]` : `${elem}[]`;
+  }
+  return tsTypeOf(oid, types);
+}

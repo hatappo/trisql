@@ -5,7 +5,7 @@ import { exprRefs } from "../core/expr.ts";
 import type { Node, Template, VariableNode } from "../core/parse.ts";
 import { type Canonical, canonical, projectOffset } from "./canonical.ts";
 import { type Described, DescribeError, type Describer } from "./describer.ts";
-import { loadNotNull, loadTypes, relationOid, tsTypeOf } from "./pgtypes.ts";
+import { loadNotNull, loadTypes, relationOid, tsInputTypeOf, tsTypeOf } from "./pgtypes.ts";
 
 export type Diagnostic = { message: string; start: number; end: number; code: number };
 
@@ -67,7 +67,7 @@ export async function analyze(template: Template, describer: Describer): Promise
   const paramTypeByIndex = new Map<number, string>();
   for (const p of canon.placeholders) {
     const oid = described?.params[p.index - 1];
-    paramTypeByIndex.set(p.index, oid === undefined || oid === 0 ? sampleType(p.node) : tsTypeOf(oid, types));
+    paramTypeByIndex.set(p.index, oid === undefined || oid === 0 ? sampleType(p.node) : tsInputTypeOf(oid, types));
   }
   const indexByNode = new Map<VariableNode, number>();
   for (const p of canon.placeholders) indexByNode.set(p.node, p.index);
@@ -180,7 +180,7 @@ function collectParams(
       }
       case "for": {
         const target = nodeFor(node.collection);
-        target.required = true;
+        if (!conditional) target.required = true;
         target.element ??= newParamNode();
         const inner: Scope = new Map(scope);
         inner.set(node.item, target.element);
