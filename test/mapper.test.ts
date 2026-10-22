@@ -42,7 +42,26 @@ describe("mapper handlers", () => {
     assert.match(t.text, /export type Params = \{ id: string \| number \| bigint \};/);
     assert.match(t.text, /export type Row = \{ id: string; name: string \| null \};/);
     assert.deepEqual(t.diagnostics, []);
-    assert.deepEqual(t.mappings, [[0, t.text.length, 0, sql.length, 1, 8 | 16 | 32]]);
+    // キーは Alias（種別 2）でテンプレート上の名前に対応し、残りは文全体への Atom（種別 1）
+    const aliases = t.mappings
+      .filter((m) => m[4] === 2)
+      .map((m) => [
+        t.text.slice(m[0], (m[0] as number) + (m[1] as number)),
+        sql.slice(m[2], (m[2] as number) + (m[3] as number)),
+        m[2],
+      ]);
+    assert.deepEqual(aliases, [
+      ["id", "id", sql.indexOf("/*$id*/") + 3],
+      ["id", "id", "SELECT ".length],
+      ["name", "name", "SELECT id, ".length],
+    ]);
+    const atoms = t.mappings.filter((m) => m[4] === 1);
+    assert.ok(atoms.every((m) => m[2] === 0 && m[3] === sql.length));
+    const starts = t.mappings.map((m) => m[0] as number);
+    assert.deepEqual(
+      starts,
+      [...starts].sort((a, b) => a - b),
+    );
   });
 
   it("reports SQL errors at their position and parse errors", async () => {

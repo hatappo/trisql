@@ -2,7 +2,7 @@
  * テンプレートを Describer で解析し、Params と Row の材料を作る。
  */
 import { exprRefs } from "../core/expr.ts";
-import type { Node, Template, VariableNode } from "../core/parse.ts";
+import type { Node, Span, Template, VariableNode } from "../core/parse.ts";
 import { type Canonical, canonical, projectOffset } from "./canonical.ts";
 import { type Described, DescribeError, type Describer } from "./describer.ts";
 import { loadNotNull, loadTypes, relationOid, tsInputTypeOf, tsTypeOf } from "./pgtypes.ts";
@@ -17,6 +17,8 @@ export type ParamNode = {
   types: Set<string>;
   /** if の条件だけから推した弱い型。types が空のときだけ使う */
   weak: Set<string>;
+  /** このキーの名前がテンプレート上で最初に現れる位置（定義ジャンプ用） */
+  span: Span | null;
   required: boolean;
   children: Map<string, ParamNode>;
   element: ParamNode | null;
@@ -35,7 +37,7 @@ export type Analysis = {
 };
 
 export function newParamNode(): ParamNode {
-  return { types: new Set(), weak: new Set(), required: false, children: new Map(), element: null };
+  return { types: new Set(), weak: new Set(), span: null, required: false, children: new Map(), element: null };
 }
 
 export async function analyze(template: Template, describer: Describer): Promise<Analysis> {
@@ -139,29 +141,30 @@ function collectParams(
   /** if の分岐の中: 分岐が選ばれたときだけ要るので必須にしない */
   conditional = false,
 ): void {
-  const nodeFor = (path: string[]): ParamNode => {
+  const nodeFor = (path: string[], start: number): ParamNode => {
     const head = path[0] as string;
+    const spans = segmentSpans(start, path);
     const base = scope.get(head);
-    return base ? ensure(base, path.slice(1)) : ensure(root, path);
+    return base ? ensure(base, path.slice(1), spans.slice(1)) : ensure(root, path, spans);
   };
   for (const node of nodes) {
     switch (node.kind) {
       case "text":
         break;
       case "bind": {
-        const target = nodeFor(node.path);
+        const target = nodeFor(node.path, node.name.start);
         target.types.add(bindTypeOf(node));
         if (!node.defaultTo && !conditional) target.required = true;
         break;
       }
       case "literal": {
-        const target = nodeFor(node.path);
+        const target = nodeFor(node.path, node.name.start);
         target.types.add(sampleType(node) === "number" ? "number" : "string");
         if (!conditional) target.required = true;
         break;
       }
       case "raw": {
-        const target = nodeFor(node.path);
+        const target = nodeFor(node.path, node.name.start);
         target.types.add("string");
         if (!conditional) target.required = true;
         break;
@@ -169,8 +172,9 @@ function collectParams(
       case "if": {
         for (const branch of node.branches) {
           if (branch.expr) {
-            for (const path of exprRefs(branch.expr)) {
-              const target = nodeFor(path);
+            for (const ref of exprRefs(branch.expr)) {
+              const path = ref.path;
+              const target = nodeFor(path, ref.start);
               target.weak.add(isBareRef(branch.expr, path) ? "boolean | null | undefined" : "unknown");
             }
           }
@@ -179,7 +183,7 @@ function collectParams(
         break;
       }
       case "for": {
-        const target = nodeFor(node.collection);
+        const target = nodeFor(node.collection, node.collectionSpan.start);
         if (!conditional) target.required = true;
         target.element ??= newParamNode();
         const inner: Scope = new Map(scope);
@@ -204,17 +208,29 @@ function isBareRef(expr: import("../core/expr.ts").Expr, path: string[]): boolea
   }
 }
 
-function ensure(node: ParamNode, path: string[]): ParamNode {
+function ensure(node: ParamNode, path: string[], spans: Span[]): ParamNode {
   let current = node;
-  for (const segment of path) {
+  path.forEach((segment, i) => {
     let child = current.children.get(segment);
     if (!child) {
       child = newParamNode();
       current.children.set(segment, child);
     }
+    child.span ??= spans[i] ?? null;
     current = child;
-  }
+  });
   return current;
+}
+
+/** `a.b.c` が `start` から始まるとき、各セグメントの位置 */
+function segmentSpans(start: number, path: string[]): Span[] {
+  const out: Span[] = [];
+  let at = start;
+  for (const segment of path) {
+    out.push({ start: at, end: at + segment.length });
+    at += segment.length + 1;
+  }
+  return out;
 }
 
 async function drivingTable(describer: Describer, sql: string): Promise<number | null> {

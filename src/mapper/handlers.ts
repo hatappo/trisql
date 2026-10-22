@@ -94,13 +94,8 @@ export class MapperHandlers {
       return fallback(sql, `Could not open the schema: ${(e as Error).message}`, DIAG.config);
     }
     const analysis = await analyze(template, describer);
-    const text = virtualModule(analysis, sql, template.doc);
-    return {
-      extension: ".ts",
-      text,
-      mappings: mapToStatement(text, sql),
-      diagnostics: analysis.diagnostics.map(toMapperDiagnostic),
-    };
+    const { text, mappings } = virtualModule(analysis, sql, template.doc);
+    return { extension: ".ts", text, mappings, diagnostics: analysis.diagnostics.map(toMapperDiagnostic) };
   }
 
   async closeProject(params: unknown): Promise<Record<never, never>> {

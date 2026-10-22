@@ -111,3 +111,29 @@ describe("analyze", () => {
     assert.equal(sql.slice(d.start, d.start + 4), "nope");
   });
 });
+
+describe("key spans", () => {
+  let describer: Describer;
+  before(async () => {
+    describer = await openPgliteDescriber([DDL]);
+  });
+  after(() => describer.close());
+
+  it("records where each Params key comes from", async () => {
+    const sql =
+      "UPDATE users SET /*%for item in updates separating , */ /*!item.name*/name = /*$item.value*/'x' /*%end*/ WHERE id = /*$where.id*/1 /*%if flag*/ AND true /*%end*/";
+    const a = await analyze(parse(sql), describer);
+    const at = (node: { span: { start: number; end: number } | null }) =>
+      node.span ? sql.slice(node.span.start, node.span.end) : null;
+    const updates = a.params.children.get("updates");
+    assert.ok(updates?.element);
+    assert.equal(at(updates), "updates");
+    assert.equal(updates.span?.start, sql.indexOf("in updates") + 3);
+    assert.equal(at(updates.element.children.get("name") as never), "name");
+    assert.equal(at(updates.element.children.get("value") as never), "value");
+    const where = a.params.children.get("where");
+    assert.equal(where?.span?.start, sql.indexOf("/*$where.id*/") + 3);
+    assert.equal(where?.children.get("id")?.span?.start, sql.indexOf("/*$where.id*/") + 9);
+    assert.equal(a.params.children.get("flag")?.span?.start, sql.indexOf("/*%if flag") + 6);
+  });
+});
