@@ -131,7 +131,14 @@ export function sampleType(node: VariableNode): string {
 
 type Scope = Map<string, ParamNode>;
 
-function collectParams(nodes: Node[], root: ParamNode, scope: Scope, bindTypeOf: (node: VariableNode) => string): void {
+function collectParams(
+  nodes: Node[],
+  root: ParamNode,
+  scope: Scope,
+  bindTypeOf: (node: VariableNode) => string,
+  /** if の分岐の中: 分岐が選ばれたときだけ要るので必須にしない */
+  conditional = false,
+): void {
   const nodeFor = (path: string[]): ParamNode => {
     const head = path[0] as string;
     const base = scope.get(head);
@@ -144,19 +151,19 @@ function collectParams(nodes: Node[], root: ParamNode, scope: Scope, bindTypeOf:
       case "bind": {
         const target = nodeFor(node.path);
         target.types.add(bindTypeOf(node));
-        if (!node.defaultTo) target.required = true;
+        if (!node.defaultTo && !conditional) target.required = true;
         break;
       }
       case "literal": {
         const target = nodeFor(node.path);
         target.types.add(sampleType(node) === "number" ? "number" : "string");
-        target.required = true;
+        if (!conditional) target.required = true;
         break;
       }
       case "raw": {
         const target = nodeFor(node.path);
         target.types.add("string");
-        target.required = true;
+        if (!conditional) target.required = true;
         break;
       }
       case "if": {
@@ -167,7 +174,7 @@ function collectParams(nodes: Node[], root: ParamNode, scope: Scope, bindTypeOf:
               target.weak.add(isBareRef(branch.expr, path) ? "boolean | null | undefined" : "unknown");
             }
           }
-          collectParams(branch.body, root, scope, bindTypeOf);
+          collectParams(branch.body, root, scope, bindTypeOf, true);
         }
         break;
       }
@@ -177,7 +184,7 @@ function collectParams(nodes: Node[], root: ParamNode, scope: Scope, bindTypeOf:
         target.element ??= newParamNode();
         const inner: Scope = new Map(scope);
         inner.set(node.item, target.element);
-        collectParams(node.body, root, inner, bindTypeOf);
+        collectParams(node.body, root, inner, bindTypeOf, conditional);
         break;
       }
     }

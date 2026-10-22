@@ -80,7 +80,7 @@ describe("analyze", () => {
 
   it("if operand used as a bind elsewhere takes the bind's type; compare operands are unknown", async () => {
     const r = await run("SELECT id FROM users WHERE /*%if status = expected */status = /*$status*/'active'/*%end*/");
-    assert.equal(r.params, '{ status: "active" | "inactive"; expected?: unknown }');
+    assert.equal(r.params, '{ status?: "active" | "inactive"; expected?: unknown }');
   });
 
   it("for loops build element types and accept Record for name/value", async () => {

@@ -30,11 +30,23 @@ export async function openPgliteDescriber(ddl: string[]): Promise<Describer> {
 
 export class PgliteDescriber implements Describer {
   readonly #db: PGlite;
+  /** execProtocol の応答が混ざらないよう、呼び出しを直列にする */
+  #turn: Promise<unknown> = Promise.resolve();
   constructor(db: PGlite) {
     this.#db = db;
   }
 
-  async describe(sql: string): Promise<Described> {
+  #serial<T>(call: () => Promise<T>): Promise<T> {
+    const next = this.#turn.then(call, call);
+    this.#turn = next.catch(() => {});
+    return next;
+  }
+
+  describe(sql: string): Promise<Described> {
+    return this.#serial(() => this.#describe(sql));
+  }
+
+  async #describe(sql: string): Promise<Described> {
     const message = concat(parseMessage(sql), describeMessage(), syncMessage());
     let messages: Backend[];
     try {
@@ -60,9 +72,8 @@ export class PgliteDescriber implements Describer {
     return out;
   }
 
-  async query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-    const result = await this.#db.query<T>(sql, params);
-    return result.rows;
+  query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+    return this.#serial(async () => (await this.#db.query<T>(sql, params)).rows);
   }
 
   close(): Promise<void> {
