@@ -137,3 +137,63 @@ describe("key spans", () => {
     assert.equal(a.params.children.get("flag")?.span?.start, sql.indexOf("/*%if flag") + 6);
   });
 });
+
+describe("outer joins with the parse tree", () => {
+  let describer: Describer;
+  before(async () => {
+    describer = await openPgliteDescriber([DDL]);
+  });
+  after(() => describer.close());
+  const row = async (sql: string) => renderRow(await analyze(parse(sql), describer));
+
+  it("marks only the nullable side of LEFT / RIGHT / FULL joins", async () => {
+    assert.equal(
+      await row("SELECT u.email, p.title FROM users u LEFT JOIN posts p ON p.user_id = u.id"),
+      "{ email: string; title: string | null }",
+    );
+    assert.equal(
+      await row("SELECT u.email, p.title FROM users u RIGHT JOIN posts p ON p.user_id = u.id"),
+      "{ email: string | null; title: string }",
+    );
+    assert.equal(
+      await row("SELECT u.email, p.title FROM users u FULL JOIN posts p ON p.user_id = u.id"),
+      "{ email: string | null; title: string | null }",
+    );
+    assert.equal(
+      await row("SELECT u.email, p.title FROM posts p LEFT JOIN users u ON p.user_id = u.id"),
+      "{ email: string | null; title: string }",
+    );
+  });
+
+  it("propagates through nested joins, subselects and CTEs", async () => {
+    assert.equal(
+      await row(
+        "SELECT u.email, p.title FROM users u JOIN (posts p LEFT JOIN users x ON x.id = p.user_id) ON p.user_id = u.id",
+      ),
+      "{ email: string | null; title: string }",
+    );
+    assert.equal(
+      await row(
+        "SELECT u.email, s.title FROM users u LEFT JOIN (SELECT title, user_id FROM posts) s ON s.user_id = u.id",
+      ),
+      "{ email: string; title: string | null }",
+    );
+    assert.equal(
+      await row(
+        "WITH t AS (SELECT title, user_id FROM posts) SELECT u.email, t.title FROM users u LEFT JOIN t ON t.user_id = u.id",
+      ),
+      "{ email: string; title: string | null }",
+    );
+    assert.equal(
+      await row("SELECT u.email, p.title FROM users u JOIN posts p ON p.user_id = u.id"),
+      "{ email: string; title: string }",
+    );
+  });
+
+  it("stays conservative on a self join", async () => {
+    assert.equal(
+      await row("SELECT a.email, b.email AS other FROM users a LEFT JOIN users b ON b.id = a.id + 1"),
+      "{ email: string | null; other: string | null }",
+    );
+  });
+});
