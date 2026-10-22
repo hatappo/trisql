@@ -13,19 +13,21 @@
 import { TysqlError } from "./errors.ts";
 
 export type Expr =
-  | { kind: "ref"; path: string[] }
+  | ExprRef
   | { kind: "compare"; op: CompareOp; left: ExprRef; right: ExprRef }
   | { kind: "and"; left: Expr; right: Expr }
   | { kind: "or"; left: Expr; right: Expr };
 
-export type ExprRef = { kind: "ref"; path: string[] };
+/** `start` は式中の参照の開始 offset（テンプレート上） */
+export type ExprRef = { kind: "ref"; path: string[]; start: number };
 export type CompareOp = "=" | "!=" | "<" | "<=" | ">" | ">=";
 
-type Token =
+type Token = { pos: number } & (
   | { type: "lparen" | "rparen" | "and" | "or"; text: string }
   | { type: "op"; text: CompareOp }
   | { type: "ident"; text: string }
-  | { type: "end"; text: "" };
+  | { type: "end"; text: "" }
+);
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/;
 
@@ -39,27 +41,27 @@ function tokenize(expression: string, offset: number): Token[] {
       continue;
     }
     if (ch === "(") {
-      tokens.push({ type: "lparen", text: ch });
+      tokens.push({ type: "lparen", text: ch, pos: offset + i });
       i += 1;
       continue;
     }
     if (ch === ")") {
-      tokens.push({ type: "rparen", text: ch });
+      tokens.push({ type: "rparen", text: ch, pos: offset + i });
       i += 1;
       continue;
     }
     const rest = expression.slice(i);
     const op = /^(<=|>=|!=|=|<|>)/.exec(rest);
     if (op) {
-      tokens.push({ type: "op", text: op[0] as CompareOp });
+      tokens.push({ type: "op", text: op[0] as CompareOp, pos: offset + i });
       i += op[0].length;
       continue;
     }
     const ident = IDENT.exec(rest);
     if (ident) {
       const text = ident[0];
-      if (text === "and" || text === "or") tokens.push({ type: text, text });
-      else tokens.push({ type: "ident", text });
+      if (text === "and" || text === "or") tokens.push({ type: text, text, pos: offset + i });
+      else tokens.push({ type: "ident", text, pos: offset + i });
       i += text.length;
       continue;
     }
@@ -82,7 +84,7 @@ export function parseExpr(expression: string, offset = 0): Expr {
   }
   const tokens = tokenize(expression, offset);
   let pos = 0;
-  const peek = (): Token => tokens[pos] ?? { type: "end", text: "" };
+  const peek = (): Token => tokens[pos] ?? { type: "end", text: "", pos: offset + expression.length };
   const fail = (message: string): never => {
     throw new TysqlError("expr/syntax", message, {
       start: offset,
@@ -95,7 +97,7 @@ export function parseExpr(expression: string, offset = 0): Expr {
     const t = peek();
     if (t.type !== "ident") return fail(`Expected a parameter name, got '${t.text || "end of condition"}'.`);
     pos += 1;
-    return { kind: "ref", path: t.text.split(".") };
+    return { kind: "ref", path: t.text.split("."), start: t.pos };
   };
   const comparison = (): Expr => {
     const left = operand();
@@ -187,13 +189,13 @@ export function evaluateExpr(expr: Expr, resolve: (path: string[]) => unknown): 
   }
 }
 
-/** 式が参照するパラメータの path をすべて返す（型付けに使う）。 */
-export function exprRefs(expr: Expr): string[][] {
+/** 式が参照するパラメータをすべて返す（型付けと定義ジャンプに使う）。 */
+export function exprRefs(expr: Expr): ExprRef[] {
   switch (expr.kind) {
     case "ref":
-      return [expr.path];
+      return [expr];
     case "compare":
-      return [expr.left.path, expr.right.path];
+      return [expr.left, expr.right];
     case "and":
     case "or":
       return [...exprRefs(expr.left), ...exprRefs(expr.right)];

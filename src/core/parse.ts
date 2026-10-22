@@ -28,6 +28,8 @@ export type ForNode = Span & {
   kind: "for";
   item: string;
   collection: string[];
+  /** ディレクティブ内のコレクション名の位置 */
+  collectionSpan: Span;
   separator: string | null;
   body: Node[];
 };
@@ -46,7 +48,7 @@ const DELIMITERS: ReadonlySet<string> = new Set([",", ")", "(", ";", ":", " ", "
 type Directive =
   | { kind: "if" | "elseif"; expr: string; exprStart: number; inline: string | null }
   | { kind: "else"; inline: string | null }
-  | { kind: "for"; item: string; collection: string[]; separator: string | null }
+  | { kind: "for"; item: string; collection: string[]; collectionSpan: Span; separator: string | null }
   | { kind: "end" };
 
 export function parse(source: string): Template {
@@ -63,7 +65,15 @@ export function parse(source: string): Template {
         current: { expr: Expr | null; start: number; nodes: Node[] };
         elseSeen: boolean;
       }
-    | { kind: "for"; start: number; item: string; collection: string[]; separator: string | null; nodes: Node[] };
+    | {
+        kind: "for";
+        start: number;
+        item: string;
+        collection: string[];
+        collectionSpan: Span;
+        separator: string | null;
+        nodes: Node[];
+      };
   const stack: Frame[] = [{ kind: "root", nodes: [] }];
   const top = (): Frame => stack[stack.length - 1] as Frame;
   const currentNodes = (): Node[] => {
@@ -144,6 +154,7 @@ export function parse(source: string): Template {
           start: seg.start,
           item: directive.item,
           collection: directive.collection,
+          collectionSpan: directive.collectionSpan,
           separator: directive.separator,
           nodes: [],
         });
@@ -160,6 +171,7 @@ export function parse(source: string): Template {
             kind: "for",
             item: f.item,
             collection: f.collection,
+            collectionSpan: f.collectionSpan,
             separator: f.separator,
             body: f.nodes,
             start: f.start,
@@ -328,10 +340,12 @@ function parseDirective(seg: CommentSegment, source: string): Directive {
       const collection = f[2] as string;
       if (!IDENT.test(item) || !PATH.test(collection))
         throw new TysqlError("parse/invalid-directive", "Invalid 'for' directive.", seg);
+      const collectionAt = seg.bodyStart + seg.body.indexOf(collection, seg.body.indexOf(item) + item.length);
       return {
         kind: "for",
         item,
         collection: collection.split("."),
+        collectionSpan: { start: collectionAt, end: collectionAt + collection.length },
         separator: f[3] === undefined ? null : (f[3] as string).trim(),
       };
     }
