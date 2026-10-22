@@ -57,7 +57,7 @@ npm install -D libpg-query   # 任意。外部結合の先にある列の nullab
 ```sh
 tsc --noEmit --runExternalCode              # 型チェック
 node --import tysql/register main.ts        # 実行（素の Node）
-npx tysql generate                          # CRUD テンプレートを sql/<table>/crud/ に生成
+npx tysql generate                          # CRUD テンプレートを sql/<schema>/<table>/crud/ に生成
 ```
 
 バンドラを使う場合は Node のプリロードの代わりにプラグインを追加する: `tysql/esbuild`（`Bun.build` も同じ）または `tysql/vite`。

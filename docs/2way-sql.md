@@ -227,9 +227,9 @@ SELECT * FROM users WHERE id = /*$id*/1
 - No layout convention is enforced. CRUD generation writes one query per file into a directory per table, plus a barrel (`index.ts`).
 
 ```text
-sql/users/crud/get-by-id.sql
-sql/users/crud/list-by-email.sql
-sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
+sql/public/users/crud/get-by-id.sql
+sql/public/users/crud/list-by-email.sql
+sql/public/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
 ```
 
 ## 9. CRUD generation
@@ -241,8 +241,8 @@ sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql
 { "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
 ```
 
-Files go to `<out>/<table>/crud/<query>.sql` (`<out>/<schema>/<table>/crud/` for schemas other than `public`).
-A barrel `index.ts` is written beside them, so `import { getById } from "./sql/users/crud"` works.
+Files go to `<out>/<schema>/<table>/crud/<query>.sql`. The `public` schema gets the same layout; it is not special.
+A barrel `index.ts` is written beside them, so `import { getById } from "./sql/public/users/crud"` works.
 The generator owns the `crud/` directory: `.sql` files and `index.ts` it did not write this time are removed.
 
 Generated queries:
@@ -340,7 +340,7 @@ A branch inside the SELECT list is not tracked in v1; the sample rendering's sha
 ## 11. Runtime API
 
 ```ts
-import getById from "./sql/users/crud/get-by-id.sql";
+import getById from "./sql/public/users/crud/get-by-id.sql";
 
 getById.render({ id: 1 });             // { sql, params }
 await getById.run(db, { id: 1 });      // Row[]
