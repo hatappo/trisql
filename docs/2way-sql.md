@@ -312,7 +312,7 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 - Type OIDs map to TypeScript types following the default output of `pg` (node-postgres): `int2` `int4` `float4` `float8` are `number`, `int8` and `numeric` are `string`, `text` `varchar` `uuid` are `string`, `bool` is `boolean`, `date` `timestamp` `timestamptz` are `Date`, `json` `jsonb` are `unknown`, `bytea` is `Buffer`, an enum is the union of its labels, an array is an array of its element type. Anything else is `unknown`.
 - PGlite returns `int8` as a `BigInt` (or `number` when safe) and differs from `pg` in a few places, but the table follows `pg`.
 - Nullability comes from `pg_attribute.attnotnull` of the source table. A column with no source table (an expression) is nullable.
-- When the statement contains `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN`, columns from any table other than the first in `FROM` are conservatively nullable. (A parse tree will make this exact later.)
+- When the statement contains an outer join (`LEFT` / `RIGHT` / `FULL JOIN`), the parse tree (`libpg-query`, an optional peer) identifies the relations on the nullable side, and columns from those tables become nullable. Nested joins, subselects and CTEs are followed. A self join that puts the same table on both sides is treated as nullable. Without `libpg-query`, the conservative rule applies: every column from a table other than the first in `FROM` is nullable.
 - A DML statement without `RETURNING` has no `Row`.
 
 ### 10.5 Go to definition

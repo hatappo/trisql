@@ -312,7 +312,7 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 - 型 OID から TS 型への対応は `pg`（node-postgres）の既定の出力に合わせる。`int2` `int4` `float4` `float8` は `number`、`int8` `numeric` は `string`、`text` `varchar` `uuid` は `string`、`bool` は `boolean`、`date` `timestamp` `timestamptz` は `Date`、`json` `jsonb` は `unknown`、`bytea` は `Buffer`、enum はラベルの union、配列は要素型の配列。それ以外は `unknown`。
 - PGlite は `int8` を `BigInt`（安全な範囲なら `number`）で返すなど `pg` と異なるが、型表は `pg` を基準にする。
 - nullability は由来テーブルの `pg_attribute.attnotnull` から。式由来の列（由来テーブルなし）は nullable。
-- 文に `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN` が含まれる場合、FROM の先頭以外のテーブル由来の列は保守的に nullable とする。（将来、構文木を導入して正確に判定する）
+- 文に外部結合（`LEFT` / `RIGHT` / `FULL JOIN`）が含まれる場合、構文木（`libpg-query`、optional peer）で null 側にあるリレーションを特定し、そのテーブル由来の列を nullable にする。入れ子の結合、サブクエリ、CTE の中も辿る。同じテーブルが両側に現れる自己結合は nullable に倒す。`libpg-query` が無ければ、FROM の先頭以外のテーブル由来の列をすべて nullable とする保守的規則に戻る。
 - `RETURNING` のない DML は `Row` を持たない。
 
 ### 10.5 定義ジャンプ
