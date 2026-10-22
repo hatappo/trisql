@@ -37,6 +37,8 @@ npm install -D typescript@beta @electric-sql/pglite
 ```jsonc
 // tysql.json
 { "schema": ["db/schema.sql"] }
+// or, to type against a running database instead of the embedded PGlite:
+// { "databaseUrl": "${DATABASE_URL}" }
 ```
 
 ```jsonc
