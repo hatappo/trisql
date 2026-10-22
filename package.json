@@ -10,7 +10,9 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./register": "./src/register.ts"
+    "./register": "./src/register.ts",
+    "./esbuild": "./src/esbuild.ts",
+    "./vite": "./src/vite.ts"
   },
   "files": [
     "src"
@@ -26,7 +28,9 @@
     "@biomejs/biome": "2.5.15",
     "@electric-sql/pglite": "0.5.10",
     "@types/node": "24.19.2",
-    "typescript": "7.1.0-dev.20261019.1"
+    "esbuild": "0.28.2",
+    "typescript": "7.1.0-dev.20261019.1",
+    "vite": "8.3.4"
   },
   "typescript": {
     "contentMapper": {
