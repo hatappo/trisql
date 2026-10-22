@@ -4,6 +4,7 @@
  *   {
  *     "schema": ["db/migrations/*.sql"],      // 内包 PGlite に適用する DDL（glob、root 相対）
  *     "databaseUrl": "${DATABASE_URL}",       // 指定時は実 DB に接続する（未実装）
+ *     "generate": { "out": "sql", "schemas": ["public"] }  // CRUD 生成の出力先と対象スキーマ
  *   }
  */
 import { existsSync, globSync, readFileSync } from "node:fs";
@@ -20,9 +21,11 @@ export type Config = {
   /** DDL ファイルの絶対パス（ソート済み） */
   schema: string[];
   databaseUrl: string | null;
+  /** CRUD 生成の出力先（絶対パス）と対象スキーマ */
+  generate: { out: string; schemas: string[] };
 };
 
-type ConfigFile = { schema?: string | string[]; databaseUrl?: string };
+type ConfigFile = { schema?: string | string[]; databaseUrl?: string; generate?: { out?: string; schemas?: string[] } };
 
 /** `from` から上へ辿り、最初に見つかった名前のファイルのパスを返す。 */
 export function findUp(from: string, name: string): string | null {
@@ -55,7 +58,11 @@ export function loadConfig(fromDir: string, env: Record<string, string | undefin
   if (patterns.length > 0 && schema.length === 0) {
     throw new TysqlError("config/no-schema-files", `${file}: "schema" matched no files: ${patterns.join(", ")}`);
   }
-  return { file, root, schema, databaseUrl };
+  const generate = {
+    out: resolve(root, parsed.generate?.out ?? "sql"),
+    schemas: parsed.generate?.schemas ?? ["public"],
+  };
+  return { file, root, schema, databaseUrl, generate };
 }
 
 function substituteEnv(value: string, env: Record<string, string | undefined>, file: string): string {
