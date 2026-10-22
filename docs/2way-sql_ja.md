@@ -315,11 +315,24 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 - 文に外部結合（`LEFT` / `RIGHT` / `FULL JOIN`）が含まれる場合、構文木（`libpg-query`、optional peer）で null 側にあるリレーションを特定し、そのテーブル由来の列を nullable にする。入れ子の結合、サブクエリ、CTE の中も辿る。同じテーブルが両側に現れる自己結合は nullable に倒す。`libpg-query` が無ければ、FROM の先頭以外のテーブル由来の列をすべて nullable とする保守的規則に戻る。
 - `RETURNING` のない DML は `Row` を持たない。
 
-### 10.5 定義ジャンプ
+### 10.5 行数（cardinality）
+
+解析結果は文が返す行数の推定 `one` / `maybeOne` / `many` / `none` を持つ（構文木が使えるとき。無ければ `RETURNING` のない DML は `none`、`LIMIT 1` は `maybeOne`、他は `many`）。迷ったら `many` に倒す。
+
+- `RETURNING` のない INSERT / UPDATE / DELETE は `none`
+- 1 行の `VALUES` を持つ `INSERT ... RETURNING` は `one`（`ON CONFLICT DO NOTHING` なら `maybeOne`）
+- `LIMIT 1` は `maybeOne`
+- `FROM` のない SELECT は `one`（`WHERE` があれば `maybeOne`）
+- `GROUP BY` のない集約だけの SELECT は `one`（`HAVING` があれば `maybeOne`）
+- 単一テーブルの SELECT / UPDATE / DELETE で、`WHERE` の AND 条件がユニークキーの全列をパラメータか定数との `=` で固定していれば `maybeOne`
+
+現時点では解析結果に載せるだけで、`run()` の戻り値は `Row[]` のまま。呼び出し API への反映は検討中（Issue #5）。
+
+### 10.6 定義ジャンプ
 
 仮想モジュールの `Params` の各キーは、テンプレート上でその名前が最初に現れる位置（`/*$name*/` の名前、`for` のコレクション名、`if` の条件のオペランド）に、`Row` の各列名は SELECT リスト内の列名に、span map の Alias として対応づける。残りは文全体への Atom。エディタで `params.userId` から該当の sigil へ定義ジャンプできる想定（実機での確認は未了）。
 
-### 10.6 制御構文と Row
+### 10.7 制御構文と Row
 
 `if` / `for` は WHERE、SET、VALUES、ORDER BY、LIMIT 内で使う前提。
 SELECT リストの中で使った場合の列形状の変化は v1 では追わず、サンプル描画の形を `Row` とする。

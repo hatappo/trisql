@@ -315,11 +315,24 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 - When the statement contains an outer join (`LEFT` / `RIGHT` / `FULL JOIN`), the parse tree (`libpg-query`, an optional peer) identifies the relations on the nullable side, and columns from those tables become nullable. Nested joins, subselects and CTEs are followed. A self join that puts the same table on both sides is treated as nullable. Without `libpg-query`, the conservative rule applies: every column from a table other than the first in `FROM` is nullable.
 - A DML statement without `RETURNING` has no `Row`.
 
-### 10.5 Go to definition
+### 10.5 Cardinality
+
+The analysis carries an estimate of how many rows the statement returns, `one` / `maybeOne` / `many` / `none` (with the parse tree; without it, a DML statement without `RETURNING` is `none`, `LIMIT 1` is `maybeOne`, anything else `many`). When in doubt it says `many`.
+
+- INSERT / UPDATE / DELETE without `RETURNING` is `none`
+- `INSERT ... RETURNING` with a single `VALUES` row is `one` (`maybeOne` with `ON CONFLICT DO NOTHING`)
+- `LIMIT 1` is `maybeOne`
+- A SELECT without `FROM` is `one` (`maybeOne` with a `WHERE`)
+- A SELECT of aggregates only, without `GROUP BY`, is `one` (`maybeOne` with `HAVING`)
+- A single-table SELECT / UPDATE / DELETE whose `WHERE` fixes every column of a unique key with `=` against a parameter or constant, joined by AND, is `maybeOne`
+
+For now this is only part of the analysis; `run()` still returns `Row[]`. Surfacing it in the call API is under discussion (issue #5).
+
+### 10.6 Go to definition
 
 Each key of `Params` in the virtual module is mapped, as a span map Alias, to where that name first appears in the template (the name in `/*$name*/`, the collection of a `for`, an operand of an `if`), and each column of `Row` to the column name in the SELECT list. The rest maps as one Atom to the whole statement. Go to definition on `params.userId` is meant to land on the sigil (not yet verified in an editor).
 
-### 10.6 Control flow and Row
+### 10.7 Control flow and Row
 
 `if` / `for` are expected inside WHERE, SET, VALUES, ORDER BY and LIMIT.
 A branch inside the SELECT list is not tracked in v1; the sample rendering's shape is the `Row`.
