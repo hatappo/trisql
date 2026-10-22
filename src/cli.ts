@@ -4,10 +4,9 @@
  *
  *   tysql generate [--dry-run]   tysql.json の schema から CRUD テンプレートを生成する
  */
-import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { loadConfig } from "./analysis/config.ts";
-import { openPgliteDescriber } from "./analysis/pglite.ts";
+import { describerError, openDescriber } from "./analysis/open.ts";
 import { introspect } from "./generate/introspect.ts";
 import { writeCrud } from "./generate/write.ts";
 
@@ -27,11 +26,12 @@ async function main(argv: string[]): Promise<number> {
     return 1;
   }
   const config = loadConfig(process.cwd());
-  if (config.schema.length === 0) {
-    console.error(`tysql generate needs "schema" (DDL files) in ${config.file ?? "tysql.json"}.`);
+  const error = describerError(config);
+  if (error !== null) {
+    console.error(error);
     return 1;
   }
-  const describer = await openPgliteDescriber(config.schema.map((f) => readFileSync(f, "utf8")));
+  const describer = await openDescriber(config);
   try {
     const tables = await introspect(describer, config.generate.schemas);
     if (tables.length === 0) {

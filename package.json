@@ -27,8 +27,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-socket": "0.2.13",
     "@types/node": "24.19.2",
+    "@types/pg": "8.15.5",
     "esbuild": "0.28.2",
+    "pg": "8.23.1",
     "typescript": "7.1.0-dev.20261019.1",
     "vite": "8.3.4"
   },
@@ -43,10 +46,14 @@
     }
   },
   "peerDependencies": {
-    "@electric-sql/pglite": ">=0.5"
+    "@electric-sql/pglite": ">=0.5",
+    "pg": ">=8"
   },
   "peerDependenciesMeta": {
     "@electric-sql/pglite": {
+      "optional": true
+    },
+    "pg": {
       "optional": true
     }
   },

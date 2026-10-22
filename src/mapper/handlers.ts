@@ -3,13 +3,13 @@
  * 位置はすべて UTF-16 コードユニット（initialize で "utf-16" を選ぶ）。
  */
 import { createHash } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { dirname } from "node:path";
 import { analyze, DIAG, type Diagnostic } from "../analysis/analyze.ts";
 import { type Config, loadConfig } from "../analysis/config.ts";
 import type { Describer } from "../analysis/describer.ts";
 import { virtualModule } from "../analysis/module-types.ts";
-import { openPgliteDescriber } from "../analysis/pglite.ts";
+import { describerError, openDescriber } from "../analysis/open.ts";
 import { TysqlError } from "../core/errors.ts";
 import { parse } from "../core/parse.ts";
 
@@ -43,11 +43,7 @@ export class MapperHandlers {
     let error: string | null = null;
     try {
       config = loadConfig(projectDir);
-      if (config.schema.length === 0 && config.databaseUrl === null) {
-        error = `tysql needs a schema to type .sql files: add "schema" (DDL files) to ${config.file ?? "tysql.json"}.`;
-      } else if (config.databaseUrl !== null) {
-        error = `"databaseUrl" is not supported yet; use "schema" with an embedded PGlite.`;
-      }
+      error = describerError(config);
     } catch (e) {
       error = (e as Error).message;
     }
@@ -85,13 +81,13 @@ export class MapperHandlers {
       throw e;
     }
 
-    project.describer ??= openPgliteDescriber(project.config.schema.map((f) => readFileSync(f, "utf8")));
+    project.describer ??= openDescriber(project.config);
     let describer: Describer;
     try {
       describer = await project.describer;
     } catch (e) {
       project.describer = null;
-      return fallback(sql, `Could not open the schema: ${(e as Error).message}`, DIAG.config);
+      return fallback(sql, `Could not open the database: ${(e as Error).message}`, DIAG.config);
     }
     const analysis = await analyze(template, describer);
     const { text, mappings } = virtualModule(analysis, sql, template.doc);
