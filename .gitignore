@@ -1,0 +1,6 @@
+node_modules/
+spikes/**/node_modules/
+spikes/**/package-lock.json
+spikes/**/*.log
+.tysql/
+dist/
