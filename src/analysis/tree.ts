@@ -136,3 +136,160 @@ function walkItem(item: Node, nullable: boolean, out: Relations, ctes: Map<strin
 function walkStmtNode(stmt: Node, nullable: boolean, out: Relations, ctes: Map<string, Node>): void {
   if (stmt.SelectStmt) walkSelect(stmt.SelectStmt as Node, nullable, out, ctes);
 }
+
+// --- cardinality ---------------------------------------------------------------
+
+export type Cardinality = "one" | "maybeOne" | "many" | "none";
+
+/** リレーション名（`schema.name` または `name`）からユニークキーの列名の組を返す */
+export type UniqueKeys = (relation: string) => Promise<string[][]>;
+
+const AGGREGATES = new Set([
+  "count",
+  "sum",
+  "avg",
+  "min",
+  "max",
+  "bool_and",
+  "bool_or",
+  "every",
+  "array_agg",
+  "string_agg",
+  "json_agg",
+  "jsonb_agg",
+  "json_object_agg",
+  "jsonb_object_agg",
+  "bit_and",
+  "bit_or",
+  "xmlagg",
+  "stddev",
+  "stddev_pop",
+  "stddev_samp",
+  "variance",
+  "var_pop",
+  "var_samp",
+]);
+
+/**
+ * 文が返す行数。迷ったら many（または DML なら none）に倒す。
+ *
+ * - RETURNING のない INSERT / UPDATE / DELETE は none
+ * - 1 行の VALUES を持つ INSERT ... RETURNING は one（ON CONFLICT DO NOTHING なら maybeOne）
+ * - LIMIT 1 は maybeOne
+ * - FROM のない SELECT は one（WHERE があれば maybeOne）
+ * - GROUP BY のない集約だけの SELECT は one（HAVING があれば maybeOne）
+ * - 単一テーブルの SELECT / UPDATE / DELETE で、WHERE がユニークキーの全列を `=` で固定していれば maybeOne
+ */
+export async function cardinalityOf(statement: Statement, uniqueKeys: UniqueKeys): Promise<Cardinality> {
+  const n = statement.node;
+  switch (statement.kind) {
+    case "insert": {
+      if (!n.returningClause) return "none";
+      const select = (n.selectStmt as Node | undefined)?.SelectStmt as Node | undefined;
+      const values = select?.valuesLists as Node[] | undefined;
+      if (values?.length !== 1) return "many";
+      const conflict = n.onConflictClause as Node | undefined;
+      if (conflict && conflict.action === "ONCONFLICT_NOTHING") return "maybeOne";
+      return "one";
+    }
+    case "update":
+    case "delete": {
+      if (!n.returningClause) return "none";
+      const relation = n.relation as Node;
+      return (await keyBound(relation, n.whereClause as Node | undefined, uniqueKeys)) ? "maybeOne" : "many";
+    }
+    case "select":
+      return selectCardinality(n, uniqueKeys);
+    case "other":
+      return "many";
+  }
+}
+
+async function selectCardinality(select: Node, uniqueKeys: UniqueKeys): Promise<Cardinality> {
+  if (select.op !== "SETOP_NONE") return "many";
+  if (isLimitOne(select.limitCount as Node | undefined)) return "maybeOne";
+  const from = (select.fromClause as Node[] | undefined) ?? [];
+  const where = select.whereClause as Node | undefined;
+  if (from.length === 0 && !select.valuesLists) return where ? "maybeOne" : "one";
+  if (!select.groupClause && !select.distinctClause && onlyAggregates(select.targetList as Node[] | undefined)) {
+    return select.havingClause ? "maybeOne" : "one";
+  }
+  const single = from.length === 1 ? ((from[0] as Node).RangeVar as Node | undefined) : undefined;
+  if (single && (await keyBound(single, where, uniqueKeys))) return "maybeOne";
+  return "many";
+}
+
+function isLimitOne(limit: Node | undefined): boolean {
+  const ival = ((limit?.A_Const as Node | undefined)?.ival as Node | undefined)?.ival;
+  return ival === 1 || ival === 0;
+}
+
+function onlyAggregates(targets: Node[] | undefined): boolean {
+  if (!targets || targets.length === 0) return false;
+  return targets.every((t) => isAggregate(((t.ResTarget as Node | undefined)?.val as Node | undefined) ?? {}));
+}
+
+function isAggregate(expr: Node): boolean {
+  if (expr.TypeCast) return isAggregate((expr.TypeCast as Node).arg as Node);
+  const call = expr.FuncCall as Node | undefined;
+  if (!call) return false;
+  if (call.agg_star) return true;
+  const names = (call.funcname as Node[]).map((f) => (f.String as Node).sval as string);
+  return AGGREGATES.has(names[names.length - 1] as string);
+}
+
+/** WHERE がこのリレーションのユニークキーの全列を `=` で固定しているか */
+async function keyBound(relation: Node, where: Node | undefined, uniqueKeys: UniqueKeys): Promise<boolean> {
+  if (!where) return false;
+  const relname = relation.relname as string;
+  const qualifiers = new Set<string>([
+    relname,
+    ((relation.alias as Node | undefined)?.aliasname as string | undefined) ?? relname,
+  ]);
+  const bound = new Set<string>();
+  for (const expr of andTerms(where)) {
+    const column = equalityColumn(expr, qualifiers);
+    if (column) bound.add(column);
+  }
+  if (bound.size === 0) return false;
+  const schema = relation.schemaname as string | undefined;
+  const keys = await uniqueKeys(schema ? `${schema}.${relname}` : relname);
+  return keys.some((key) => key.length > 0 && key.every((c) => bound.has(c)));
+}
+
+function andTerms(expr: Node): Node[] {
+  const bool = expr.BoolExpr as Node | undefined;
+  if (bool && bool.boolop === "AND_EXPR") return (bool.args as Node[]).flatMap(andTerms);
+  return [expr];
+}
+
+/** `col = <param | const>`（または逆順）なら列名。修飾子が別のリレーションなら null */
+function equalityColumn(expr: Node, qualifiers: Set<string>): string | null {
+  const a = expr.A_Expr as Node | undefined;
+  if (a?.kind !== "AEXPR_OP") return null;
+  const op = ((a.name as Node[])[0]?.String as Node | undefined)?.sval;
+  if (op !== "=") return null;
+  for (const [side, other] of [
+    [a.lexpr, a.rexpr],
+    [a.rexpr, a.lexpr],
+  ] as [Node, Node][]) {
+    const column = columnOf(side, qualifiers);
+    if (column && isValue(other)) return column;
+  }
+  return null;
+}
+
+function columnOf(expr: Node, qualifiers: Set<string>): string | null {
+  const ref = expr.ColumnRef as Node | undefined;
+  if (!ref) return null;
+  const fields = (ref.fields as Node[]).map((f) => (f.String as Node | undefined)?.sval as string | undefined);
+  if (fields.some((f) => f === undefined)) return null;
+  if (fields.length === 1) return fields[0] as string;
+  if (fields.length === 2 && qualifiers.has(fields[0] as string)) return fields[1] as string;
+  return null;
+}
+
+function isValue(expr: Node): boolean {
+  if (expr.TypeCast) return isValue((expr.TypeCast as Node).arg as Node);
+  return expr.ParamRef !== undefined || expr.A_Const !== undefined;
+}

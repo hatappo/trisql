@@ -5,8 +5,16 @@ import { exprRefs } from "../core/expr.ts";
 import type { Node, Span, Template, VariableNode } from "../core/parse.ts";
 import { type Canonical, canonical, projectOffset } from "./canonical.ts";
 import { type Described, DescribeError, type Describer } from "./describer.ts";
-import { loadNotNull, loadRelationNames, loadTypes, relationOid, tsInputTypeOf, tsTypeOf } from "./pgtypes.ts";
-import { classifyRelations, loadParser, statementOf } from "./tree.ts";
+import {
+  loadNotNull,
+  loadRelationNames,
+  loadTypes,
+  loadUniqueKeys,
+  relationOid,
+  tsInputTypeOf,
+  tsTypeOf,
+} from "./pgtypes.ts";
+import { type Cardinality, cardinalityOf, classifyRelations, loadParser, statementOf } from "./tree.ts";
 
 export type Diagnostic = { message: string; start: number; end: number; code: number };
 
@@ -33,6 +41,8 @@ export type Analysis = {
   columns: Column[] | null;
   /** Describe に失敗し、列が分からない */
   rowUnknown: boolean;
+  /** 文が返す行数。迷ったら many */
+  cardinality: Cardinality;
   diagnostics: Diagnostic[];
   canonical: Canonical;
 };
@@ -64,6 +74,8 @@ export async function analyze(template: Template, describer: Describer): Promise
     for (const c of described.columns ?? []) oids.add(c.oid);
   }
   const types = await loadTypes(describer, oids);
+  const parser = await loadParser();
+  const statement = parser ? statementOf(parser, canon.sql) : null;
 
   // パラメータ
   const root = newParamNode();
@@ -93,8 +105,6 @@ export async function analyze(template: Template, describer: Describer): Promise
     // 外部結合の null 側: 構文木があれば正確に、なければ FROM 先頭以外を全部 nullable にする保守的規則
     let nullableTable: (table: number) => boolean = () => false;
     if (outerJoin) {
-      const parser = await loadParser();
-      const statement = parser ? statementOf(parser, canon.sql) : null;
       if (statement) {
         const relations = classifyRelations(statement);
         const names = await loadRelationNames(describer, tables);
@@ -110,7 +120,23 @@ export async function analyze(template: Template, describer: Describer): Promise
     });
   }
 
-  return { params: root, columns, rowUnknown: described === null, diagnostics, canonical: canon };
+  // 行数
+  let cardinality: Cardinality = "many";
+  if (described) {
+    if (statement) {
+      const keysOf = async (relation: string): Promise<string[][]> => {
+        const oid = await relationOid(describer, relation);
+        return oid === null ? [] : loadUniqueKeys(describer, oid);
+      };
+      cardinality = await cardinalityOf(statement, keysOf);
+    } else if (described.columns === null) {
+      cardinality = "none";
+    } else if (/\bLIMIT\s+1\b/i.test(canon.sql)) {
+      cardinality = "maybeOne";
+    }
+  }
+
+  return { params: root, columns, rowUnknown: described === null, diagnostics, canonical: canon, cardinality };
 }
 
 function wrap(type: string): string {
