@@ -144,3 +144,14 @@ export function tsInputTypeOf(oid: number, types: Map<number, PgType>): string {
   }
   return tsTypeOf(oid, types);
 }
+
+/** テーブル OID からリレーション名へ */
+export async function loadRelationNames(describer: Describer, tables: Iterable<number>): Promise<Map<number, string>> {
+  const rels = [...new Set(tables)].filter((t) => t !== 0);
+  if (rels.length === 0) return new Map();
+  const rows = await describer.query<{ oid: number; name: string }>(
+    "SELECT oid::int AS oid, relname::text AS name FROM pg_class WHERE oid = ANY($1::oid[])",
+    [rels],
+  );
+  return new Map(rows.map((r) => [r.oid, r.name]));
+}
