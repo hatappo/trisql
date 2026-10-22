@@ -5,7 +5,16 @@ import { exprRefs } from "../core/expr.ts";
 import type { Node, Span, Template, VariableNode } from "../core/parse.ts";
 import { type Canonical, canonical, projectOffset } from "./canonical.ts";
 import { type Described, DescribeError, type Describer } from "./describer.ts";
-import { loadNotNull, loadTypes, relationOid, tsInputTypeOf, tsTypeOf } from "./pgtypes.ts";
+import {
+  loadNotNull,
+  loadRelationNames,
+  loadTypes,
+  loadUniqueKeys,
+  relationOid,
+  tsInputTypeOf,
+  tsTypeOf,
+} from "./pgtypes.ts";
+import { type Cardinality, cardinalityOf, classifyRelations, loadParser, statementOf } from "./tree.ts";
 
 export type Diagnostic = { message: string; start: number; end: number; code: number };
 
@@ -32,6 +41,8 @@ export type Analysis = {
   columns: Column[] | null;
   /** Describe に失敗し、列が分からない */
   rowUnknown: boolean;
+  /** 文が返す行数。迷ったら many */
+  cardinality: Cardinality;
   diagnostics: Diagnostic[];
   canonical: Canonical;
 };
@@ -63,6 +74,8 @@ export async function analyze(template: Template, describer: Describer): Promise
     for (const c of described.columns ?? []) oids.add(c.oid);
   }
   const types = await loadTypes(describer, oids);
+  const parser = await loadParser();
+  const statement = parser ? statementOf(parser, canon.sql) : null;
 
   // パラメータ
   const root = newParamNode();
@@ -86,20 +99,44 @@ export async function analyze(template: Template, describer: Describer): Promise
   // 列
   let columns: Column[] | null = null;
   if (described?.columns) {
-    const notNull = await loadNotNull(
-      describer,
-      described.columns.map((c) => c.table),
-    );
+    const tables = described.columns.map((c) => c.table);
+    const notNull = await loadNotNull(describer, tables);
     const outerJoin = /\b(LEFT|RIGHT|FULL)\s+(OUTER\s+)?JOIN\b/i.test(canon.sql);
-    const driving = outerJoin ? await drivingTable(describer, canon.sql) : null;
+    // 外部結合の null 側: 構文木があれば正確に、なければ FROM 先頭以外を全部 nullable にする保守的規則
+    let nullableTable: (table: number) => boolean = () => false;
+    if (outerJoin) {
+      if (statement) {
+        const relations = classifyRelations(statement);
+        const names = await loadRelationNames(describer, tables);
+        nullableTable = (table) => relations.nullable.has(names.get(table) ?? "");
+      } else {
+        const driving = await drivingTable(describer, canon.sql);
+        nullableTable = (table) => table !== driving;
+      }
+    }
     columns = described.columns.map((c) => {
-      let nullable = c.table === 0 || !notNull.has(`${c.table}:${c.attnum}`);
-      if (outerJoin && c.table !== 0 && c.table !== driving) nullable = true;
+      const nullable = c.table === 0 || !notNull.has(`${c.table}:${c.attnum}`) || nullableTable(c.table);
       return { name: c.name, oid: c.oid, type: tsTypeOf(c.oid, types), nullable };
     });
   }
 
-  return { params: root, columns, rowUnknown: described === null, diagnostics, canonical: canon };
+  // 行数
+  let cardinality: Cardinality = "many";
+  if (described) {
+    if (statement) {
+      const keysOf = async (relation: string): Promise<string[][]> => {
+        const oid = await relationOid(describer, relation);
+        return oid === null ? [] : loadUniqueKeys(describer, oid);
+      };
+      cardinality = await cardinalityOf(statement, keysOf);
+    } else if (described.columns === null) {
+      cardinality = "none";
+    } else if (/\bLIMIT\s+1\b/i.test(canon.sql)) {
+      cardinality = "maybeOne";
+    }
+  }
+
+  return { params: root, columns, rowUnknown: described === null, diagnostics, canonical: canon, cardinality };
 }
 
 function wrap(type: string): string {

@@ -36,6 +36,7 @@ Requirements: Node 24+, TypeScript 7.1 (beta or nightly), a `.sql` schema file (
 ```sh
 npm install tysql pg
 npm install -D typescript@beta @electric-sql/pglite
+npm install -D libpg-query   # optional: exact nullability for columns behind outer joins
 ```
 
 ```jsonc

@@ -36,6 +36,7 @@ const user = await getUser.maybeOne(db, { id: "1" });
 ```sh
 npm install tysql pg
 npm install -D typescript@beta @electric-sql/pglite
+npm install -D libpg-query   # 任意。外部結合の先にある列の nullability を正確にする
 ```
 
 ```jsonc

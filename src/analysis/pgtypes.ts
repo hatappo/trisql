@@ -144,3 +144,28 @@ export function tsInputTypeOf(oid: number, types: Map<number, PgType>): string {
   }
   return tsTypeOf(oid, types);
 }
+
+/** テーブル OID からリレーション名へ */
+export async function loadRelationNames(describer: Describer, tables: Iterable<number>): Promise<Map<number, string>> {
+  const rels = [...new Set(tables)].filter((t) => t !== 0);
+  if (rels.length === 0) return new Map();
+  const rows = await describer.query<{ oid: number; name: string }>(
+    "SELECT oid::int AS oid, relname::text AS name FROM pg_class WHERE oid = ANY($1::oid[])",
+    [rels],
+  );
+  return new Map(rows.map((r) => [r.oid, r.name]));
+}
+
+/** テーブルのユニークキー（主キーを含む）の列名の組。部分インデックスと式インデックスは除く */
+export async function loadUniqueKeys(describer: Describer, table: number): Promise<string[][]> {
+  const rows = await describer.query<{ columns: string[] | string }>(
+    `SELECT array_agg(a.attname::text ORDER BY k.ord) AS columns
+       FROM pg_index i
+       JOIN LATERAL unnest(i.indkey::int2[]) WITH ORDINALITY AS k(attnum, ord) ON true
+       JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = k.attnum
+      WHERE i.indrelid = $1::oid AND i.indisunique AND i.indisvalid AND i.indpred IS NULL AND i.indexprs IS NULL
+      GROUP BY i.indexrelid`,
+    [table],
+  );
+  return rows.map((r) => (Array.isArray(r.columns) ? r.columns : r.columns.replace(/^\{|\}$/g, "").split(",")));
+}
