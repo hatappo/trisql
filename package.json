@@ -1,0 +1,63 @@
+{
+  "name": "tysql",
+  "version": "0.0.0",
+  "description": "2-way SQL templates as typed TypeScript queries, powered by TypeScript 7.1 content mappers.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./register": "./src/register.ts",
+    "./esbuild": "./src/esbuild.ts",
+    "./vite": "./src/vite.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "npm run lint && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@electric-sql/pglite": "0.5.10",
+    "@electric-sql/pglite-socket": "0.2.13",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.15.5",
+    "esbuild": "0.28.2",
+    "pg": "8.23.1",
+    "typescript": "7.1.0-dev.20261019.1",
+    "vite": "8.3.4"
+  },
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "node",
+        "src/mapper.ts"
+      ],
+      "compilerOptions": [],
+      "dynamicConfig": true
+    }
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": ">=0.5",
+    "pg": ">=8"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "tysql": "./src/cli.ts"
+  }
+}

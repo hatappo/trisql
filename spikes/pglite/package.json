@@ -1,0 +1,11 @@
+{
+  "name": "tysql-spike-pglite",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10"
+  },
+  "dependencies": {
+    "pg-protocol": "1.8.0"
+  }
+}

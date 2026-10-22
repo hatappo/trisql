@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": []
+  },
+  "include": ["main.ts"],
+  "contentMappers": [
+    { "package": "tysql-spike-mapper", "extensions": [".sql"] }
+  ]
+}
