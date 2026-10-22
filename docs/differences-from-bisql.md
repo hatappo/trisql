@@ -49,6 +49,7 @@ This document covers **differences only**. The full specification is in [2way-sq
 | `DEFAULT`, `ALL` | `bisql/DEFAULT`, `bisql/ALL` (sentinel objects) | Unique symbols that appear in the `Params` union |
 | LIKE helpers | `LIKE_STARTS_WITH` etc. return a `LikePattern` record | Same-named functions return a branded type that appears in the `Params` union |
 | `'` inside a `^` literal | Error | Doubled to `''` |
+| Sigil comment with no sample directly after it | Treated as ordinary text | Error |
 | Result column names | Converted to kebab-case keywords (`:display-name`) | Kept as snake_case (`display_name`) |
 | Value conversion | JDBC helpers such as `->timestamp` | None; left to the driver |
 

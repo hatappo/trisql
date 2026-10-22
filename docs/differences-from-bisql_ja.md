@@ -49,6 +49,7 @@ tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ラ�
 | `DEFAULT` `ALL` | `bisql/DEFAULT` `bisql/ALL`（センチネルオブジェクト） | unique symbol。Params 型の union に現れる |
 | LIKE ヘルパ | `LIKE_STARTS_WITH` などが `LikePattern` レコードを返す | 同名の関数がブランド型を返す。Params 型の union に現れる |
 | `^` リテラルの `'` | 含む文字列はエラー | `''` に二重化 |
+| サンプルが直後にない sigil コメント | 通常のテキストとして扱う | エラー |
 | 結果の列名 | kebab-case キーワードに変換（`:display-name`） | snake_case のまま（`display_name`） |
 | 値の変換 | `->timestamp` などの JDBC ヘルパ | なし。ドライバに委ねる |
 
