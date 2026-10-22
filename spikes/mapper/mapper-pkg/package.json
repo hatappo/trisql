@@ -1,0 +1,12 @@
+{
+  "name": "tysql-spike-mapper",
+  "version": "0.0.1",
+  "type": "module",
+  "typescript": {
+    "contentMapper": {
+      "exec": ["node", "mapper.js"],
+      "compilerOptions": [],
+      "dynamicConfig": false
+    }
+  }
+}
