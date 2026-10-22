@@ -9,7 +9,8 @@
     "node": ">=24"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./register": "./src/register.ts"
   },
   "files": [
     "src"
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@electric-sql/pglite": "0.5.10",
     "@types/node": "24.19.2",
     "typescript": "7.1.0-dev.20261019.1"
   }
