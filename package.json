@@ -27,5 +27,23 @@
     "@electric-sql/pglite": "0.5.10",
     "@types/node": "24.19.2",
     "typescript": "7.1.0-dev.20261019.1"
+  },
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "node",
+        "src/mapper.ts"
+      ],
+      "compilerOptions": [],
+      "dynamicConfig": true
+    }
+  },
+  "peerDependencies": {
+    "@electric-sql/pglite": ">=0.5"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    }
   }
 }
