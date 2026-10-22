@@ -197,3 +197,45 @@ describe("outer joins with the parse tree", () => {
     );
   });
 });
+
+describe("cardinality", () => {
+  let describer: Describer;
+  before(async () => {
+    describer = await openPgliteDescriber([DDL]);
+  });
+  after(() => describer.close());
+  const card = async (sql: string) => (await analyze(parse(sql), describer)).cardinality;
+
+  it("DML", async () => {
+    assert.equal(await card("INSERT INTO users (email) VALUES (/*$email*/'a')"), "none");
+    assert.equal(await card("INSERT INTO users (email) VALUES (/*$email*/'a') RETURNING *"), "one");
+    assert.equal(
+      await card("INSERT INTO users (email) VALUES (/*$email*/'a') ON CONFLICT (email) DO NOTHING RETURNING *"),
+      "maybeOne",
+    );
+    assert.equal(await card("INSERT INTO users (email) VALUES (/*$e1*/'a'), (/*$e2*/'b') RETURNING *"), "many");
+    assert.equal(await card("UPDATE users SET name = /*$name*/'x' WHERE id = /*$id*/1"), "none");
+    assert.equal(await card("UPDATE users SET name = /*$name*/'x' WHERE id = /*$id*/1 RETURNING *"), "maybeOne");
+    assert.equal(await card("DELETE FROM users WHERE status = /*$status*/'active' RETURNING *"), "many");
+  });
+
+  it("SELECT", async () => {
+    assert.equal(await card("SELECT * FROM users WHERE id = /*$id*/1"), "maybeOne");
+    assert.equal(
+      await card("SELECT * FROM users u WHERE u.email = /*$email*/'a' AND u.status = /*$status*/'active'"),
+      "maybeOne",
+    );
+    assert.equal(await card("SELECT * FROM users WHERE /*$id*/1 = id"), "maybeOne");
+    assert.equal(await card("SELECT * FROM users WHERE id = /*$id*/1 OR email = /*$email*/'a'"), "many");
+    assert.equal(await card("SELECT * FROM users WHERE name = /*$name*/'a'"), "many");
+    assert.equal(await card("SELECT * FROM users u JOIN posts p ON p.user_id = u.id WHERE u.id = /*$id*/1"), "many");
+    assert.equal(await card("SELECT * FROM users ORDER BY id LIMIT 1"), "maybeOne");
+    assert.equal(await card("SELECT * FROM users LIMIT /*$limit*/10"), "many");
+    assert.equal(await card("SELECT count(*)::int AS n, max(name) FROM users"), "one");
+    assert.equal(await card("SELECT count(*) FROM users GROUP BY status"), "many");
+    assert.equal(await card("SELECT count(*) FROM users HAVING count(*) > 1"), "maybeOne");
+    assert.equal(await card("SELECT 1 AS x"), "one");
+    assert.equal(await card("SELECT id FROM users UNION SELECT id FROM users"), "many");
+    assert.equal(await card("SELECT * FROM users /*%if id */ WHERE id = /*$id*/1 /*%end*/"), "maybeOne");
+  });
+});
