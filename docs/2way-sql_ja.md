@@ -232,17 +232,45 @@ sql/users/crud/list-by-email.sql
 sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
 ```
 
-## 9. 型付け
+## 9. CRUD 生成
+
+`tysql generate` は設定の DDL を内包 PGlite に適用し、テーブルごとに index-friendly な CRUD テンプレートを生成する。
+
+```jsonc
+// tysql.json
+{ "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
+```
+
+出力先は `<out>/<table>/crud/<query>.sql`（`public` 以外のスキーマは `<out>/<schema>/<table>/crud/`）。
+併せて `index.ts`（barrel）を生成し、`import { getById } from "./sql/users/crud"` と書ける。
+`crud/` ディレクトリは生成器が所有し、今回生成しなかった `.sql` と `index.ts` は削除する。
+
+生成されるクエリ:
+
+| 名前 | 内容 |
+|---|---|
+| `insert`、`insert-many` | 挿入可能な全列。default や identity を持つ列と nullable な列は `default-to` で optional。`RETURNING *` |
+| `get-by-<unique>`、`delete-by-<unique>` | 主キーと各ユニークキーによる 1 件取得・削除 |
+| `update-by-<unique>` | `where` と `updates`（`for` ループ）による部分更新 |
+| `upsert-by-<unique>` | `inserts` と `updates`。`updates` が未指定なら `DO NOTHING` |
+| `list`、`list-by-<index prefix>` | 主キー順の一覧と、インデックスの各接頭辞による一覧。残りの列で `ORDER BY`。`LIMIT` 付き |
+| `list-by-<...>-starting-with`、`count-by-<...>-starting-with` | 末尾が文字列列のインデックスに対する前方一致（`LIKE ... ESCAPE`） |
+| `count`、`count-by-<index prefix>` | 件数 |
+
+生成列（`GENERATED ALWAYS AS`）と `GENERATED ALWAYS AS IDENTITY` の列は挿入対象から外す。
+複数列の名前は `-and-` で結合し、列名の `_` は `-` にする。
+
+## 10. 型付け
 
 型チェック時、content mapper が各テンプレートを解析して `Params` と `Row` を決める。
 
-### 9.1 情報源
+### 10.1 情報源
 
 - 既定: 設定で指定した DDL（マイグレーションまたは `schema.sql`）を内包 PGlite に適用し、Parse/Describe とカタログ照会を行う。
 - `databaseUrl` 指定時: その PostgreSQL に同じ問い合わせを行う。
 - 両者は同じ `Describer` インターフェースで抽象化され、同じ解析結果を返す。
 
-### 9.2 正準描画（canonical rendering）
+### 10.2 正準描画（canonical rendering）
 
 Describe は 1 文しか受け付けないので、テンプレートから「正準描画」を 1 つ作って送る。
 
@@ -261,11 +289,12 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 
 正準描画の各文字がテンプレートのどの offset に由来するかの対応表を保持し、Postgres のエラー位置（`position`）や列名の位置をテンプレート上に投影する。
 
-### 9.3 Params
+### 10.3 Params
 
 | 出現箇所 | 型 | optional |
 |---|---|---|
 | `$` スカラー | サンプルの直後のキャスト > Describe のパラメータ型 > サンプルリテラルの型 | `default-to` 付きなら optional |
+| `$` の入力型は出力型より広い | `int8` `numeric` は `string | number | bigint`、日時は `Date | string`、`bytea` は `Buffer | Uint8Array` | |
 | `$` コレクション | 要素型の配列 | 同上 |
 | `if` の分岐内の `$` / `^` / `!` | 同上 | optional（分岐が選ばれたときだけ要る） |
 | `^` | サンプルの型（`string` または `number`） | なし |
@@ -277,7 +306,7 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 
 `DEFAULT` / `ALL` / LIKE ヘルパを受け付ける箇所は、その型が union に加わる。
 
-### 9.4 Row
+### 10.4 Row
 
 - 列の名前と型は Describe の RowDescription から。列名は snake_case のまま。
 - 型 OID から TS 型への対応は `pg`（node-postgres）の既定の出力に合わせる。`int2` `int4` `float4` `float8` は `number`、`int8` `numeric` は `string`、`text` `varchar` `uuid` は `string`、`bool` は `boolean`、`date` `timestamp` `timestamptz` は `Date`、`json` `jsonb` は `unknown`、`bytea` は `Buffer`、enum はラベルの union、配列は要素型の配列。それ以外は `unknown`。
@@ -286,12 +315,12 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 - 文に `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN` が含まれる場合、FROM の先頭以外のテーブル由来の列は保守的に nullable とする。（将来、構文木を導入して正確に判定する）
 - `RETURNING` のない DML は `Row` を持たない。
 
-### 9.5 制御構文と Row
+### 10.5 制御構文と Row
 
 `if` / `for` は WHERE、SET、VALUES、ORDER BY、LIMIT 内で使う前提。
 SELECT リストの中で使った場合の列形状の変化は v1 では追わず、サンプル描画の形を `Row` とする。
 
-## 10. ランタイム API
+## 11. ランタイム API
 
 ```ts
 import getById from "./sql/users/crud/get-by-id.sql";
@@ -309,7 +338,7 @@ getById.raw                         // テンプレート原文
 - 結果の値変換は最小限で、ドライバの出力をそのまま返す。
 - **実行用モジュールの生成に DB は不要。** テンプレートの解析と描画だけで `defineQuery(...)` を作れるので、ロードフックは同期的に動き、キャッシュも worker も要らない（reylo との大きな違い）。JSON Schema による実行時検証を付ける場合だけ型チェックの解析結果が要る。
 
-## 11. 未決事項
+## 12. 未決事項
 
 - `!` raw をブランド型（`raw()` ヘルパ経由のみ）に限定するか。
 - SELECT リスト内の `if` を v2 でどう扱うか（分岐列挙か、禁止か）。

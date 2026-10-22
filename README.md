@@ -50,6 +50,7 @@ npm install -D typescript@beta @electric-sql/pglite
 ```sh
 tsc --noEmit --runExternalCode              # type check
 node --import tysql/register main.ts        # run
+npx tysql generate                          # write CRUD templates into sql/<table>/crud/
 ```
 
 ## Development

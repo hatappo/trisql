@@ -232,17 +232,45 @@ sql/users/crud/list-by-email.sql
 sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
 ```
 
-## 9. Typing
+## 9. CRUD generation
+
+`tysql generate` applies the configured DDL to the embedded PGlite and writes index-friendly CRUD templates per table.
+
+```jsonc
+// tysql.json
+{ "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
+```
+
+Files go to `<out>/<table>/crud/<query>.sql` (`<out>/<schema>/<table>/crud/` for schemas other than `public`).
+A barrel `index.ts` is written beside them, so `import { getById } from "./sql/users/crud"` works.
+The generator owns the `crud/` directory: `.sql` files and `index.ts` it did not write this time are removed.
+
+Generated queries:
+
+| Name | Content |
+|---|---|
+| `insert`, `insert-many` | Every insertable column. Columns with a default or identity, and nullable columns, are optional through `default-to`. `RETURNING *` |
+| `get-by-<unique>`, `delete-by-<unique>` | One row by the primary key and by each unique key |
+| `update-by-<unique>` | Partial update through `where` and `updates` (a `for` loop) |
+| `upsert-by-<unique>` | `inserts` and `updates`; `DO NOTHING` when `updates` is not given |
+| `list`, `list-by-<index prefix>` | All rows in primary-key order, and rows by each index prefix, ordered by the remaining columns, with `LIMIT` |
+| `list-by-<...>-starting-with`, `count-by-<...>-starting-with` | Prefix match (`LIKE ... ESCAPE`) on indexes whose last column is text |
+| `count`, `count-by-<index prefix>` | Row counts |
+
+Generated columns (`GENERATED ALWAYS AS`) and `GENERATED ALWAYS AS IDENTITY` columns are not inserted.
+Multi-column names are joined with `-and-`, and `_` in column names becomes `-`.
+
+## 10. Typing
 
 At type-check time the content mapper analyzes each template and derives `Params` and `Row`.
 
-### 9.1 Sources
+### 10.1 Sources
 
 - Default: the DDL named in the configuration (migrations or a `schema.sql`) is applied to an embedded PGlite, which answers Parse/Describe and catalog queries.
 - With `databaseUrl`: the same queries go to that PostgreSQL.
 - Both sit behind one `Describer` interface and must produce the same analysis.
 
-### 9.2 Canonical rendering
+### 10.2 Canonical rendering
 
 Describe accepts one statement, so one "canonical rendering" is built from the template and sent.
 
@@ -261,11 +289,12 @@ Describing one rendering per branch is a v2 consideration.
 
 A table mapping each character of the canonical rendering back to its template offset is kept, so that a PostgreSQL error position (`position`) or a column name position can be projected onto the template.
 
-### 9.3 Params
+### 10.3 Params
 
 | Occurrence | Type | Optional |
 |---|---|---|
 | scalar `$` | cast after the sample > Describe parameter type > sample literal type | with `default-to` |
+| input types of `$` are wider than output types | `int8` `numeric` are `string | number | bigint`, date/time are `Date | string`, `bytea` is `Buffer | Uint8Array` | |
 | collection `$` | array of the element type | same |
 | `$` / `^` / `!` inside an `if` branch | as above | optional (needed only when the branch is taken) |
 | `^` | the sample's type (`string` or `number`) | no |
@@ -277,7 +306,7 @@ A table mapping each character of the canonical rendering back to its template o
 
 Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 
-### 9.4 Row
+### 10.4 Row
 
 - Column names and types come from the RowDescription of Describe. Names stay snake_case.
 - Type OIDs map to TypeScript types following the default output of `pg` (node-postgres): `int2` `int4` `float4` `float8` are `number`, `int8` and `numeric` are `string`, `text` `varchar` `uuid` are `string`, `bool` is `boolean`, `date` `timestamp` `timestamptz` are `Date`, `json` `jsonb` are `unknown`, `bytea` is `Buffer`, an enum is the union of its labels, an array is an array of its element type. Anything else is `unknown`.
@@ -286,12 +315,12 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 - When the statement contains `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN`, columns from any table other than the first in `FROM` are conservatively nullable. (A parse tree will make this exact later.)
 - A DML statement without `RETURNING` has no `Row`.
 
-### 9.5 Control flow and Row
+### 10.5 Control flow and Row
 
 `if` / `for` are expected inside WHERE, SET, VALUES, ORDER BY and LIMIT.
 A branch inside the SELECT list is not tracked in v1; the sample rendering's shape is the `Row`.
 
-## 10. Runtime API
+## 11. Runtime API
 
 ```ts
 import getById from "./sql/users/crud/get-by-id.sql";
@@ -309,7 +338,7 @@ getById.raw                            // the template as written
 - Value conversion is minimal; the driver's output is returned as-is.
 - **Building the runtime module needs no database.** Parsing and rendering the template is enough to produce `defineQuery(...)`, so the load hook is synchronous and needs neither a cache nor a worker (a major difference from reylo). Only optional JSON Schema validation at run time would need the type-check analysis.
 
-## 11. Open questions
+## 12. Open questions
 
 - Whether to restrict `!` raw to a branded type (only through a `raw()` helper).
 - How v2 handles `if` inside the SELECT list (enumerate branches, or forbid).
