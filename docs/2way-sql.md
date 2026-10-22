@@ -315,7 +315,11 @@ Where `DEFAULT` / `ALL` / a LIKE helper is accepted, its type joins the union.
 - When the statement contains `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN`, columns from any table other than the first in `FROM` are conservatively nullable. (A parse tree will make this exact later.)
 - A DML statement without `RETURNING` has no `Row`.
 
-### 10.5 Control flow and Row
+### 10.5 Go to definition
+
+Each key of `Params` in the virtual module is mapped, as a span map Alias, to where that name first appears in the template (the name in `/*$name*/`, the collection of a `for`, an operand of an `if`), and each column of `Row` to the column name in the SELECT list. The rest maps as one Atom to the whole statement. Go to definition on `params.userId` is meant to land on the sigil (not yet verified in an editor).
+
+### 10.6 Control flow and Row
 
 `if` / `for` are expected inside WHERE, SET, VALUES, ORDER BY and LIMIT.
 A branch inside the SELECT list is not tracked in v1; the sample rendering's shape is the `Row`.

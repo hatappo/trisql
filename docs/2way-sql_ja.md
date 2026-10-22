@@ -315,7 +315,11 @@ Describe は 1 文しか受け付けないので、テンプレートから「�
 - 文に `LEFT JOIN` / `RIGHT JOIN` / `FULL JOIN` が含まれる場合、FROM の先頭以外のテーブル由来の列は保守的に nullable とする。（将来、構文木を導入して正確に判定する）
 - `RETURNING` のない DML は `Row` を持たない。
 
-### 10.5 制御構文と Row
+### 10.5 定義ジャンプ
+
+仮想モジュールの `Params` の各キーは、テンプレート上でその名前が最初に現れる位置（`/*$name*/` の名前、`for` のコレクション名、`if` の条件のオペランド）に、`Row` の各列名は SELECT リスト内の列名に、span map の Alias として対応づける。残りは文全体への Atom。エディタで `params.userId` から該当の sigil へ定義ジャンプできる想定（実機での確認は未了）。
+
+### 10.6 制御構文と Row
 
 `if` / `for` は WHERE、SET、VALUES、ORDER BY、LIMIT 内で使う前提。
 SELECT リストの中で使った場合の列形状の変化は v1 では追わず、サンプル描画の形を `Row` とする。
