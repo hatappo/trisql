@@ -45,5 +45,8 @@
     "@electric-sql/pglite": {
       "optional": true
     }
+  },
+  "bin": {
+    "tysql": "./src/cli.ts"
   }
 }
