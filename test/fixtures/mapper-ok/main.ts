@@ -19,7 +19,7 @@ await searchUsers.run(db, { limit: "5" });
 await insertUser.exec(db, { email: "b@example.com", name: "Bob" });
 
 // 生成した CRUD テンプレート
-import { getById, insert, listByEmailStartingWith, updateById, upsertByEmail } from "./sql/users/crud/index.ts";
+import { getById, insert, listByEmailStartingWith, updateById, upsertByEmail } from "./sql/public/users/crud/index.ts";
 
 const created = await insert.one(db, { email: "c@example.com" });
 const fetched = await getById.maybeOne(db, { id: created.id });

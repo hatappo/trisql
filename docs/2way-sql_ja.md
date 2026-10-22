@@ -227,9 +227,9 @@ SELECT * FROM users WHERE id = /*$id*/1
 - 配置規約は強制しない。CRUD 生成はテーブルごとのディレクトリにクエリを展開し、barrel（`index.ts`）を併せて生成する。
 
 ```text
-sql/users/crud/get-by-id.sql
-sql/users/crud/list-by-email.sql
-sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
+sql/public/users/crud/get-by-id.sql
+sql/public/users/crud/list-by-email.sql
+sql/public/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql"; ...
 ```
 
 ## 9. CRUD 生成
@@ -241,8 +241,8 @@ sql/users/crud/index.ts   // export { default as getById } from "./get-by-id.sql
 { "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
 ```
 
-出力先は `<out>/<table>/crud/<query>.sql`（`public` 以外のスキーマは `<out>/<schema>/<table>/crud/`）。
-併せて `index.ts`（barrel）を生成し、`import { getById } from "./sql/users/crud"` と書ける。
+出力先は `<out>/<schema>/<table>/crud/<query>.sql`。`public` スキーマも同じ階層で、特別扱いしない。
+併せて `index.ts`（barrel）を生成し、`import { getById } from "./sql/public/users/crud"` と書ける。
 `crud/` ディレクトリは生成器が所有し、今回生成しなかった `.sql` と `index.ts` は削除する。
 
 生成されるクエリ:
@@ -340,7 +340,7 @@ SELECT リストの中で使った場合の列形状の変化は v1 では追わ
 ## 11. ランタイム API
 
 ```ts
-import getById from "./sql/users/crud/get-by-id.sql";
+import getById from "./sql/public/users/crud/get-by-id.sql";
 
 getById.render({ id: 1 });          // { sql, params }
 await getById.run(db, { id: 1 });   // Row[]

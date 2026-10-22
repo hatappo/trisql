@@ -1,8 +1,7 @@
 /**
  * 生成した CRUD テンプレートをディレクトリに書き出し、barrel（index.ts）を併せて作る。
  *
- *   <out>/<table>/crud/<query>.sql        （public スキーマ）
- *   <out>/<schema>/<table>/crud/<query>.sql （それ以外）
+ *   <out>/<schema>/<table>/crud/<query>.sql
  *
  * `crud/` ディレクトリは生成器が所有する。今回生成しなかった .sql と index.ts は削除する。
  */
@@ -14,7 +13,7 @@ import type { Table } from "./introspect.ts";
 export type WriteResult = { written: string[]; unchanged: string[]; removed: string[] };
 
 export function crudDir(out: string, table: Table): string {
-  return table.schema === "public" ? join(out, table.name, "crud") : join(out, table.schema, table.name, "crud");
+  return join(out, table.schema, table.name, "crud");
 }
 
 export function exportName(queryName: string): string {

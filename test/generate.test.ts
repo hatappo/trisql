@@ -157,15 +157,15 @@ describe("generate", () => {
     const dir = mkdtempSync(join(tmpdir(), "tysql-gen-"));
     try {
       const first = writeCrud(dir, tables);
-      assert.ok(first.written.some((f) => f.endsWith(join("users", "crud", "get-by-id.sql"))));
-      const index = readFileSync(join(dir, "users", "crud", "index.ts"), "utf8");
+      assert.ok(first.written.some((f) => f.endsWith(join("public", "users", "crud", "get-by-id.sql"))));
+      const index = readFileSync(join(dir, "public", "users", "crud", "index.ts"), "utf8");
       assert.match(index, /export \{ default as getById \} from "\.\/get-by-id\.sql";/);
       assert.match(index, /export \{ default as listByStatusAndNameStartingWith \} from/);
-      writeFileSync(join(dir, "users", "crud", "stale.sql"), "SELECT 1");
+      writeFileSync(join(dir, "public", "users", "crud", "stale.sql"), "SELECT 1");
       const second = writeCrud(dir, tables);
       assert.deepEqual(second.written, []);
       assert.ok(second.removed.some((f) => f.endsWith("stale.sql")));
-      assert.ok(!readdirSync(join(dir, "users", "crud")).includes("stale.sql"));
+      assert.ok(!readdirSync(join(dir, "public", "users", "crud")).includes("stale.sql"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
