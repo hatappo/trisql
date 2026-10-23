@@ -58,6 +58,7 @@ npm install -D libpg-query   # 任意。外部結合の先にある列の nullab
 tsc --noEmit --runExternalCode              # 型チェック
 node --import trisql/register main.ts        # 実行（素の Node）
 npx trisql generate                          # CRUD テンプレートを sql/<schema>/<table>/crud/ に生成
+npx trisql declarations "src/**/*.sql"       # content mapper を持たないツール（svelte-check、TS 5/6）向けに .d.sql.ts を .sql の隣に生成
 ```
 
 バンドラを使う場合は Node のプリロードの代わりにプラグインを追加する: `trisql/esbuild`（`Bun.build` も同じ）または `trisql/vite`。
