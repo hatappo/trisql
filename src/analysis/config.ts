@@ -5,8 +5,6 @@
  *     "schema": ["db/migrations/*.sql"],      // 内包 PGlite に適用する DDL（glob、root 相対）
  *     "databaseUrl": "${DATABASE_URL}",       // 指定時は実 DB に接続する（未実装）
  *     "generate": { "out": "sql", "schemas": ["public"] }  // CRUD 生成の出力先と対象スキーマ
- *     "declarations": ["src/queries/*.sql"]           // `.d.sql.ts` を書く対象（generate の出力先は常に対象）
- *     // または { "auto": true, "include": [...] }: content mapper が型チェックのたびに .d.sql.ts を書く
  *   }
  */
 
@@ -26,18 +24,12 @@ export type Config = {
   databaseUrl: string | null;
   /** CRUD 生成の出力先（絶対パス）と対象スキーマ */
   generate: { out: string; schemas: string[] };
-  /** `trisql declarations` が宣言ファイルを書く `.sql` の絶対パス（glob 展開済み、ソート済み） */
-  declarations: string[];
-  /** content mapper が型チェックのたびに `.d.sql.ts` を書くか */
-  declarationsAuto: boolean;
 };
 
 type ConfigFile = {
   schema?: string | string[];
   databaseUrl?: string;
   generate?: { out?: string; schemas?: string[] };
-  /** glob の配列、または { auto, include }。auto は content mapper が型チェックのたびに .d.sql.ts を書く */
-  declarations?: string | string[] | { auto?: boolean; include?: string | string[] };
 };
 
 /** `from` から上へ辿り、最初に見つかった名前のファイルのパスを返す。 */
@@ -75,18 +67,7 @@ export function loadConfig(fromDir: string, env: Record<string, string | undefin
     out: resolve(root, parsed.generate?.out ?? "sql"),
     schemas: parsed.generate?.schemas ?? ["public"],
   };
-  const declarationsConfig = parsed.declarations;
-  const isObjectForm =
-    declarationsConfig !== undefined && typeof declarationsConfig === "object" && !Array.isArray(declarationsConfig);
-  const declarationsInclude = isObjectForm ? (declarationsConfig.include ?? []) : (declarationsConfig ?? []);
-  const declarationPatterns = Array.isArray(declarationsInclude) ? declarationsInclude : [declarationsInclude];
-  const declarationsAuto = isObjectForm && declarationsConfig.auto === true;
-  const declarations = declarationPatterns
-    .flatMap((pattern) => globSync(pattern, { cwd: root }).map((p) => resolve(root, p)))
-    .filter((p) => p.endsWith(".sql"))
-    .filter((p, i, all) => all.indexOf(p) === i)
-    .sort();
-  return { file, root, schema, databaseUrl, generate, declarations, declarationsAuto };
+  return { file, root, schema, databaseUrl, generate };
 }
 
 function substituteEnv(value: string, env: Record<string, string | undefined>, file: string): string {

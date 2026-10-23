@@ -58,7 +58,6 @@ npm install -D libpg-query   # optional: exact nullability for columns behind ou
 tsc --noEmit --runExternalCode              # type check
 node --import trisql/register main.ts        # run (plain Node)
 npx trisql generate                          # write CRUD templates into sql/<schema>/<table>/crud/
-npx trisql declarations "src/**/*.sql"       # .d.sql.ts beside each .sql, for tools without the content mapper (svelte-check, TS 5/6)
 ```
 
 With a bundler, add the plugin instead of the Node preload: `trisql/esbuild` (also for `Bun.build`) or `trisql/vite`.

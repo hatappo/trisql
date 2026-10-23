@@ -10,12 +10,7 @@ import { join, relative } from "node:path";
 import { generateCrud } from "./crud.ts";
 import type { Table } from "./introspect.ts";
 
-export type WriteResult = {
-  written: string[];
-  unchanged: string[];
-  removed: string[] /** 生成した `.sql` の絶対パス */;
-  sqlFiles: string[];
-};
+export type WriteResult = { written: string[]; unchanged: string[]; removed: string[] };
 
 export function crudDir(out: string, table: Table): string {
   return join(out, table.schema, table.name, "crud");
@@ -35,7 +30,7 @@ export function barrel(names: string[]): string {
 }
 
 export function writeCrud(out: string, tables: Table[], options: { dryRun?: boolean } = {}): WriteResult {
-  const result: WriteResult = { written: [], unchanged: [], removed: [], sqlFiles: [] };
+  const result: WriteResult = { written: [], unchanged: [], removed: [] };
   for (const table of tables) {
     const dir = crudDir(out, table);
     const queries = generateCrud(table);
@@ -44,7 +39,6 @@ export function writeCrud(out: string, tables: Table[], options: { dryRun?: bool
     if (!options.dryRun) mkdirSync(dir, { recursive: true });
     for (const [name, content] of files) {
       const path = join(dir, name);
-      if (name.endsWith(".sql")) result.sqlFiles.push(path);
       const shown = relative(process.cwd(), path);
       if (existsSync(path) && readFileSync(path, "utf8") === content) {
         result.unchanged.push(shown);
@@ -55,9 +49,7 @@ export function writeCrud(out: string, tables: Table[], options: { dryRun?: bool
     }
     if (existsSync(dir)) {
       for (const name of readdirSync(dir)) {
-        if (files.has(name) || !(name.endsWith(".sql") || name.endsWith(".d.sql.ts") || name === "index.ts")) continue;
-        // 生成した .sql の宣言ファイルは残す（declarations が書く）
-        if (name.endsWith(".d.sql.ts") && files.has(name.replace(/\.d\.sql\.ts$/, ".sql"))) continue;
+        if (files.has(name) || !(name.endsWith(".sql") || name === "index.ts")) continue;
         if (!options.dryRun) rmSync(join(dir, name));
         result.removed.push(relative(process.cwd(), join(dir, name)));
       }

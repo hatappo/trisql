@@ -17,7 +17,6 @@ describe("public API", () => {
       "introspect",
       "generateCrud",
       "writeCrud",
-      "writeDeclarations",
       "renderParams",
       "renderRow",
       "virtualModule",

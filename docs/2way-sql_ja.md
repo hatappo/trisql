@@ -260,16 +260,6 @@ sql/public/users/crud/index.ts   // export { default as getById } from "./get-by
 生成列（`GENERATED ALWAYS AS`）と `GENERATED ALWAYS AS IDENTITY` の列は挿入対象から外す。
 複数列の名前は `-and-` で結合し、列名の `_` は `-` にする。
 
-## 9.1 宣言ファイル（`.d.sql.ts`）
-
-TypeScript 7.1 の content mapper を持たないツール（svelte-check、TypeScript 5 / 6 系のエディタや CI）向けに、`.sql` の隣に `<name>.d.sql.ts` を書ける。内容は content mapper が tsc に渡す仮想モジュールと同じ（`Params`、`Row`、`default` の `Query`）。
-
-- `trisql generate` は生成した CRUD テンプレートの宣言ファイルを常に書く。手書きの `.sql` は `trisql.json` の `"declarations": ["src/queries/*.sql"]` か、`trisql declarations <glob>` で対象にする
-- 読む側の tsconfig には `allowArbitraryExtensions: true` が要る
-- TypeScript 7.1 + content mapper の環境では mapper が優先され、宣言ファイルは無視される（実験で確認済み）。両方あっても矛盾しない
-- 宣言ファイルは生成物なので、スキーマやテンプレートを変えたら `trisql generate` または `trisql declarations` で作り直す。古いままだと型が実体とずれる。これが content mapper より劣る点
-- `trisql.json` に `"declarations": { "auto": true, "include": [...] }` と書くと、content mapper が型チェック（tsc 7.1 やエディタ）のたびに `.d.sql.ts` を書き直す。内容が変わるときだけ書き、解析に失敗した文の宣言は古いまま残す。svelte-check のような TS 6 系ツールと併用するプロジェクト向けで、型チェックが作業ツリーを書き換える点は承知の上で使う
-
 ## 10. 型付け
 
 型チェック時、content mapper が各テンプレートを解析して `Params` と `Row` を決める。

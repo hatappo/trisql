@@ -4,7 +4,7 @@
  */
 import { createHash } from "node:crypto";
 import { statSync } from "node:fs";
-import { dirname, relative } from "node:path";
+import { dirname } from "node:path";
 import { analyze, DIAG, type Diagnostic } from "../analysis/analyze.ts";
 import { type Config, loadConfig } from "../analysis/config.ts";
 import type { Describer } from "../analysis/describer.ts";
@@ -12,7 +12,6 @@ import { virtualModule } from "../analysis/module-types.ts";
 import { describerError, openDescriber } from "../analysis/open.ts";
 import { TrisqlError } from "../core/errors.ts";
 import { parse } from "../core/parse.ts";
-import { declarationText, writeDeclarationIfChanged } from "../generate/declarations.ts";
 
 export type MapperDiagnostic = { messageText: string; start: number; length: number; code: number };
 export type Transformed = { extension: ".ts"; text: string; mappings: number[][]; diagnostics: MapperDiagnostic[] };
@@ -92,17 +91,6 @@ export class MapperHandlers {
     }
     const analysis = await analyze(template, describer);
     const { text, mappings } = virtualModule(analysis, sql, template.doc);
-    // declarations.auto: 型チェックのたびに .d.sql.ts を書く（内容が変わるときだけ。解析に失敗した文は古いままにする）
-    if (project.config.declarationsAuto && analysis.diagnostics.length === 0) {
-      try {
-        writeDeclarationIfChanged(
-          p.fileName,
-          declarationText(relative(project.config.root, p.fileName), analysis, sql, template.doc),
-        );
-      } catch {
-        // 書けなくても型チェックは続ける
-      }
-    }
     return { extension: ".ts", text, mappings, diagnostics: analysis.diagnostics.map(toMapperDiagnostic) };
   }
 
