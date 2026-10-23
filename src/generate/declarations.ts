@@ -7,13 +7,26 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
-import { analyze } from "../analysis/analyze.ts";
+import { type Analysis, analyze } from "../analysis/analyze.ts";
 import type { Describer } from "../analysis/describer.ts";
 import { virtualModule } from "../analysis/module-types.ts";
 import { TrisqlError } from "../core/errors.ts";
 import { parse } from "../core/parse.ts";
 
 export type DeclarationResult = { written: string[]; unchanged: string[]; failed: { file: string; message: string }[] };
+
+/** 宣言ファイルの本文。`sqlFile` はヘッダに載せる名前 */
+export function declarationText(sqlFile: string, analysis: Analysis, sql: string, doc: string | null): string {
+  return `${header(sqlFile)}${virtualModule(analysis, sql, doc).text}`;
+}
+
+/** 内容が変わるときだけ書く。書いたら true */
+export function writeDeclarationIfChanged(sqlPath: string, text: string): boolean {
+  const out = declarationPath(sqlPath);
+  if (existsSync(out) && readFileSync(out, "utf8") === text) return false;
+  writeFileSync(out, text);
+  return true;
+}
 
 /** `.sql` のパスに対応する宣言ファイルのパス */
 export function declarationPath(sqlPath: string): string {
@@ -38,7 +51,7 @@ export async function writeDeclarations(
         result.failed.push({ file: shown, message: problem.message });
         continue;
       }
-      text = `${header(shown)}${virtualModule(analysis, sql, template.doc).text}`;
+      text = declarationText(shown, analysis, sql, template.doc);
     } catch (e) {
       result.failed.push({ file: shown, message: e instanceof TrisqlError ? e.message : String(e) });
       continue;
