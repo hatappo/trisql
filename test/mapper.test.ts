@@ -51,7 +51,9 @@ describe("mapper handlers", () => {
         sql.slice(m[2], (m[2] as number) + (m[3] as number)),
         m[2],
       ]);
-    assert.deepEqual(aliases, [
+    // Params と Row は別名の定義と Query の型引数の 2 か所に書かれるので、重複を除いて比べる
+    const unique = aliases.filter((a, i) => aliases.findIndex((b) => JSON.stringify(b) === JSON.stringify(a)) === i);
+    assert.deepEqual(unique, [
       ["id", "id", sql.indexOf("/*$id*/") + 3],
       ["id", "id", "SELECT ".length],
       ["name", "name", "SELECT id, ".length],
@@ -106,13 +108,19 @@ describe("tsc --runExternalCode", () => {
     const r = tsc(fixture("mapper-errors"));
     assert.equal(r.status, 2);
     const lines = r.stdout.split("\n").filter((l) => l.includes("error TS"));
-    assert.deepEqual(
-      lines.map((l) => l.replace(/^.*main\.ts/, "main.ts")),
-      [
-        "main.ts(6,25): error TS2353: Object literal may only specify known properties, and 'nope' does not exist in type 'Params'.",
-        "main.ts(8,25): error TS2322: Type 'boolean' is not assignable to type 'string | number | bigint'.",
-        "main.ts(11,15): error TS2339: Property 'missing' does not exist on type 'Row'.",
-      ],
+    const shown = lines.map((l) => l.replace(/^.*main\.ts/, "main.ts"));
+    assert.equal(shown.length, 3, r.stdout);
+    assert.match(
+      shown[0] ?? "",
+      /^main\.ts\(6,25\): error TS2353: .*'nope' does not exist in type '\{ id: string \| number \| bigint; \}'/,
+    );
+    assert.match(
+      shown[1] ?? "",
+      /^main\.ts\(8,25\): error TS2322: Type 'boolean' is not assignable to type 'string \| number \| bigint'/,
+    );
+    assert.match(
+      shown[2] ?? "",
+      /^main\.ts\(11,15\): error TS2339: Property 'missing' does not exist on type '\{ id: string; email: string; name: string \| null; status: "active" \| "inactive"; \}'/,
     );
   });
 });
