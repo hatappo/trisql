@@ -86,11 +86,10 @@ describe("declarations", () => {
     const bin = join(root, "node_modules", "typescript", "bin", "tsc");
     const r = spawnSync(process.execPath, [bin, "-p", project, "--noEmit"], { encoding: "utf8", cwd: project });
     const errors = r.stdout.split("\n").filter((l) => l.includes("error TS"));
-    assert.deepEqual(
-      errors.map((l) => l.replace(/^.*main\.ts/, "main.ts")),
-      [
-        "main.ts(5,25): error TS2353: Object literal may only specify known properties, and 'nope' does not exist in type 'Params'.",
-      ],
+    assert.equal(errors.length, 1, r.stdout);
+    assert.match(
+      errors[0] ?? "",
+      /main\.ts\(5,25\): error TS2353: .*'nope' does not exist in type '\{ id: string \| number \| bigint; \}'/,
     );
   });
 });

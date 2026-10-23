@@ -157,7 +157,12 @@ export function virtualModule(analysis: Analysis, raw: string, doc: string | nul
   b.write(";\n");
   b.write(`export declare const raw: ${JSON.stringify(raw)};\n`);
   if (doc !== null) b.write(`/** ${doc.replace(/\*\//g, "* /")} */\n`);
-  b.write("declare const query: Query<Params, Row>;\nexport default query;\n");
+  // Query の型引数には別名ではなく型そのものを書く。ホバーで `Query<Params, Row>` ではなく形が見えるように（reylo と同じ）
+  b.write("declare const query: Query<");
+  writeParams(b, analysis.params);
+  b.write(", ");
+  writeRow(b, analysis, raw);
+  b.write(">;\nexport default query;\n");
   b.write("export type { AllValue, DefaultValue, LikePattern };\n");
   return { text: b.text, mappings: mappings(b, raw) };
 }
