@@ -2,7 +2,7 @@
 // プレースホルダは `?` ではなく `$n`。
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ALL, DEFAULT, LIKE_CONTAINS, parse, render, TysqlError } from "../src/index.ts";
+import { ALL, DEFAULT, LIKE_CONTAINS, parse, render, TrisqlError } from "../src/index.ts";
 
 const run = (sql: string, params: Record<string, unknown>) => render(parse(sql), params);
 
@@ -75,7 +75,7 @@ describe("variables", () => {
     });
     assert.throws(
       () => run("WHERE id IN /*$ids*/(1,2,3)", { ids: [] }),
-      (e: unknown) => e instanceof TysqlError && e.code === "render/collection-empty",
+      (e: unknown) => e instanceof TrisqlError && e.code === "render/collection-empty",
     );
   });
 
@@ -101,7 +101,9 @@ describe("variables", () => {
     assert.throws(
       () => run("SELECT * FROM users WHERE id = /*$id*/1", { ic: 42 }),
       (e: unknown) =>
-        e instanceof TysqlError && e.code === "render/missing-parameter" && e.message === "Missing query parameter: id",
+        e instanceof TrisqlError &&
+        e.code === "render/missing-parameter" &&
+        e.message === "Missing query parameter: id",
     );
   });
 });
@@ -190,11 +192,11 @@ describe("control flow", () => {
     });
     assert.throws(
       () => run(sql, { updates: { "a b": 1 } }),
-      (e: unknown) => e instanceof TysqlError && e.code === "render/for-key",
+      (e: unknown) => e instanceof TrisqlError && e.code === "render/for-key",
     );
     assert.throws(
       () => run(sql, { updates: {} }),
-      (e: unknown) => e instanceof TysqlError && e.code === "render/empty-set",
+      (e: unknown) => e instanceof TrisqlError && e.code === "render/empty-set",
     );
   });
 });
@@ -214,7 +216,7 @@ describe("declarations and comments", () => {
   it("rejects unknown declarations", () => {
     assert.throws(
       () => parse("/*:tags [:x] */ SELECT 1"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/unknown-declaration",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/unknown-declaration",
     );
   });
 

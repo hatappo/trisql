@@ -1,7 +1,7 @@
 /**
  * `import q from "./x.sql"` の実体。型は content mapper が与え、値はローダーが作る。
  */
-import { TysqlError } from "../core/errors.ts";
+import { TrisqlError } from "../core/errors.ts";
 import { parse, type Template } from "../core/parse.ts";
 import { type Rendered, render } from "../core/render.ts";
 
@@ -56,8 +56,8 @@ export function defineQuery<P = Record<string, unknown>, R = Record<string, unkn
   try {
     template = parse(def.raw);
   } catch (e) {
-    if (e instanceof TysqlError && source !== null) {
-      throw new TysqlError(e.code, `${source}: ${e.message}`, { ...spanOf(e), details: e.details, cause: e });
+    if (e instanceof TrisqlError && source !== null) {
+      throw new TrisqlError(e.code, `${source}: ${e.message}`, { ...spanOf(e), details: e.details, cause: e });
     }
     throw e;
   }
@@ -66,8 +66,8 @@ export function defineQuery<P = Record<string, unknown>, R = Record<string, unkn
     try {
       return render(template, (params ?? {}) as Record<string, unknown>);
     } catch (e) {
-      if (e instanceof TysqlError && source !== null) {
-        throw new TysqlError(e.code, `${source}: ${e.message}`, { ...spanOf(e), details: e.details, cause: e });
+      if (e instanceof TrisqlError && source !== null) {
+        throw new TrisqlError(e.code, `${source}: ${e.message}`, { ...spanOf(e), details: e.details, cause: e });
       }
       throw e;
     }
@@ -80,7 +80,7 @@ export function defineQuery<P = Record<string, unknown>, R = Record<string, unkn
   const one = async (client: QueryClient, params: P | undefined): Promise<R> => {
     const rows = await run(client, params);
     if (rows.length !== 1) {
-      throw new TysqlError("query/cardinality", `${where(source)}Expected exactly one row, got ${rows.length}.`, {
+      throw new TrisqlError("query/cardinality", `${where(source)}Expected exactly one row, got ${rows.length}.`, {
         details: { rows: rows.length },
       });
     }
@@ -89,7 +89,7 @@ export function defineQuery<P = Record<string, unknown>, R = Record<string, unkn
   const maybeOne = async (client: QueryClient, params: P | undefined): Promise<R | null> => {
     const rows = await run(client, params);
     if (rows.length > 1) {
-      throw new TysqlError("query/cardinality", `${where(source)}Expected at most one row, got ${rows.length}.`, {
+      throw new TrisqlError("query/cardinality", `${where(source)}Expected at most one row, got ${rows.length}.`, {
         details: { rows: rows.length },
       });
     }
@@ -119,7 +119,7 @@ export function defineQuery<P = Record<string, unknown>, R = Record<string, unkn
   };
 }
 
-function spanOf(e: TysqlError): { start?: number; end?: number } {
+function spanOf(e: TrisqlError): { start?: number; end?: number } {
   return { ...(e.start === undefined ? {} : { start: e.start }), ...(e.end === undefined ? {} : { end: e.end }) };
 }
 

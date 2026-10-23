@@ -9,16 +9,16 @@ import { MapperHandlers } from "../src/mapper/handlers.ts";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const fixture = (name: string) => join(root, "test", "fixtures", name);
 
-/** fixture から `tysql` パッケージが解決できるよう node_modules にシンボリックリンクを張る */
-function linkTysql(dir: string): void {
-  const link = join(dir, "node_modules", "tysql");
+/** fixture から `trisql` パッケージが解決できるよう node_modules にシンボリックリンクを張る */
+function linkTrisql(dir: string): void {
+  const link = join(dir, "node_modules", "trisql");
   if (existsSync(link)) return;
   mkdirSync(dirname(link), { recursive: true });
   symlinkSync(root, link, "dir");
 }
 
 function tsc(dir: string): { status: number | null; stdout: string; stderr: string } {
-  linkTysql(dir);
+  linkTrisql(dir);
   const bin = join(root, "node_modules", "typescript", "bin", "tsc");
   const r = spawnSync(process.execPath, [bin, "-p", dir, "--noEmit", "--runExternalCode"], {
     encoding: "utf8",
@@ -31,10 +31,10 @@ describe("mapper handlers", () => {
   const handlers = new MapperHandlers();
   after(() => handlers.closeAll());
 
-  it("types a .sql file against the schema in tysql.json", async () => {
+  it("types a .sql file against the schema in trisql.json", async () => {
     const dir = fixture("mapper-ok");
     const open = handlers.openProject({ projectHandle: "h1", configFileName: join(dir, "tsconfig.json") });
-    assert.ok(open.watchedFiles.some((f) => f.endsWith("tysql.json")));
+    assert.ok(open.watchedFiles.some((f) => f.endsWith("trisql.json")));
     assert.ok(open.watchedFiles.some((f) => f.endsWith("schema.sql")));
     const sql = "SELECT id, name FROM users WHERE id = /*$id*/1";
     const t = await handlers.transform({ fileName: join(dir, "x.sql"), content: sql, projectHandle: "h1" });

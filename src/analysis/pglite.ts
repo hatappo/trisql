@@ -2,7 +2,7 @@
  * 内包 PGlite による Describer。DDL を適用した上で Parse / Describe / Sync を送る。
  */
 import type { PGlite } from "@electric-sql/pglite";
-import { TysqlError } from "../core/errors.ts";
+import { TrisqlError } from "../core/errors.ts";
 import { type Described, type DescribedColumn, DescribeError, type Describer } from "./describer.ts";
 
 type Backend = {
@@ -16,9 +16,9 @@ export async function openPgliteDescriber(ddl: string[]): Promise<Describer> {
   try {
     mod = await import("@electric-sql/pglite");
   } catch (e) {
-    throw new TysqlError(
+    throw new TrisqlError(
       "describer/pglite-missing",
-      "tysql types .sql files with an embedded PGlite by default: npm install -D @electric-sql/pglite",
+      "trisql types .sql files with an embedded PGlite by default: npm install -D @electric-sql/pglite",
       { cause: e },
     );
   }

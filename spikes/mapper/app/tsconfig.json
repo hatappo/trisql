@@ -10,6 +10,6 @@
   },
   "include": ["main.ts"],
   "contentMappers": [
-    { "package": "tysql-spike-mapper", "extensions": [".sql"] }
+    { "package": "trisql-spike-mapper", "extensions": [".sql"] }
   ]
 }

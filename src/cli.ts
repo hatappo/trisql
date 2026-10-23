@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * tysql の CLI。
+ * trisql の CLI。
  *
- *   tysql generate [--dry-run]   tysql.json の schema から CRUD テンプレートを生成する
+ *   trisql generate [--dry-run]   trisql.json の schema から CRUD テンプレートを生成する
  */
 import { parseArgs } from "node:util";
 import { loadConfig } from "./analysis/config.ts";
@@ -18,7 +18,7 @@ async function main(argv: string[]): Promise<number> {
   });
   const command = positionals[0];
   if (values.help || command === undefined) {
-    console.log("Usage: tysql generate [--dry-run]");
+    console.log("Usage: trisql generate [--dry-run]");
     return command === undefined && !values.help ? 1 : 0;
   }
   if (command !== "generate") {

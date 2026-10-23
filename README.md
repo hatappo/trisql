@@ -1,6 +1,6 @@
-# tysql
+# trisql
 
-<p align="center"><code>tysql</code> (<code>táisikl</code>)</p>
+<p align="center"><code>trisql</code> (<code>trάɪsɪkl</code>)</p>
 
 2-way SQL templates as typed TypeScript queries. [日本語](./README_ja.md)
 
@@ -34,13 +34,13 @@ Status: experimental. See [docs/2way-sql.md](./docs/2way-sql.md) for the templat
 Requirements: Node 24+, TypeScript 7.1 (beta or nightly), a `.sql` schema file (migrations or `pg_dump --schema-only`).
 
 ```sh
-npm install tysql pg
+npm install trisql pg
 npm install -D typescript@beta @electric-sql/pglite
 npm install -D libpg-query   # optional: exact nullability for columns behind outer joins
 ```
 
 ```jsonc
-// tysql.json
+// trisql.json
 { "schema": ["db/schema.sql"] }
 // or, to type against a running database instead of the embedded PGlite:
 // { "databaseUrl": "${DATABASE_URL}" }
@@ -50,17 +50,17 @@ npm install -D libpg-query   # optional: exact nullability for columns behind ou
 // tsconfig.json
 {
   "compilerOptions": { /* ... */ },
-  "contentMappers": [{ "package": "tysql", "extensions": [".sql"] }]
+  "contentMappers": [{ "package": "trisql", "extensions": [".sql"] }]
 }
 ```
 
 ```sh
 tsc --noEmit --runExternalCode              # type check
-node --import tysql/register main.ts        # run (plain Node)
-npx tysql generate                          # write CRUD templates into sql/<schema>/<table>/crud/
+node --import trisql/register main.ts        # run (plain Node)
+npx trisql generate                          # write CRUD templates into sql/<schema>/<table>/crud/
 ```
 
-With a bundler, add the plugin instead of the Node preload: `tysql/esbuild` (also for `Bun.build`) or `tysql/vite`.
+With a bundler, add the plugin instead of the Node preload: `trisql/esbuild` (also for `Bun.build`) or `trisql/vite`.
 
 ## Development
 

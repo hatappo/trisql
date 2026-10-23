@@ -6,7 +6,7 @@ const log = (s) => appendFileSync(new URL("./mapper.log", import.meta.url), s + 
 const handlers = {
   initialize(params) {
     log("initialize " + JSON.stringify(params));
-    return { protocolVersion: params?.protocolVersion ?? 1, positionEncoding: "utf-8", diagnosticSource: "tysql" };
+    return { protocolVersion: params?.protocolVersion ?? 1, positionEncoding: "utf-8", diagnosticSource: "trisql" };
   },
   openProject(params) {
     log("openProject " + JSON.stringify(params));
@@ -28,7 +28,7 @@ const handlers = {
     const sqlBytes = Buffer.byteLength(sql);
     const ATOM = 1, DEFINITION = 8;
     const diagnostics = [];
-    if (sql.includes("BROKEN")) diagnostics.push({ messageText: "tysql: BROKEN found in SQL", start: sql.indexOf("BROKEN"), length: 6, code: 1 });
+    if (sql.includes("BROKEN")) diagnostics.push({ messageText: "trisql: BROKEN found in SQL", start: sql.indexOf("BROKEN"), length: 6, code: 1 });
     return { extension: ".ts", text, mappings: [[0, bytes, 0, sqlBytes, ATOM, DEFINITION]], diagnostics };
   },
   closeProject(params) {

@@ -8,7 +8,7 @@ export function sqlModuleSource(path: string, sql: string): string {
   // 構文エラーは import 時に出す（モジュールを評価してからではなく）
   parse(sql);
   return [
-    `import { defineQuery } from "tysql";`,
+    `import { defineQuery } from "trisql";`,
     `export const raw = ${JSON.stringify(sql)};`,
     `export default defineQuery({ raw, source: ${JSON.stringify(path)} });`,
     ``,

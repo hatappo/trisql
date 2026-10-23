@@ -1,4 +1,4 @@
-# tysql の 2-way SQL 仕様
+# trisql の 2-way SQL 仕様
 
 状態: 設計段階のドラフト（2026-10-23）。実装に合わせて更新する。
 bisql との差分だけを知りたい場合は [differences-from-bisql_ja.md](./differences-from-bisql_ja.md) を参照。
@@ -95,7 +95,7 @@ VALUES (/*$id default-to */DEFAULT, /*$email*/'user@example.com')
 
 ### 3.6 特殊値
 
-- `DEFAULT`、`ALL`: tysql が export する unique symbol。渡すと `$n` ではなく SQL キーワード `DEFAULT` / `ALL` を描画する。スカラーの `$` バインドのみ。
+- `DEFAULT`、`ALL`: trisql が export する unique symbol。渡すと `$n` ではなく SQL キーワード `DEFAULT` / `ALL` を描画する。スカラーの `$` バインドのみ。
 - `LIKE_STARTS_WITH(s)`、`LIKE_ENDS_WITH(s)`、`LIKE_CONTAINS(s)`: `%`、`_`、`\` をエスケープし適切な位置に `%` を付けた値をバインドする。SQL 側には `ESCAPE '\'` を書くこと。
 
 ```sql
@@ -234,10 +234,10 @@ sql/public/users/crud/index.ts   // export { default as getById } from "./get-by
 
 ## 9. CRUD 生成
 
-`tysql generate` は設定の DDL を内包 PGlite に適用し、テーブルごとに index-friendly な CRUD テンプレートを生成する。
+`trisql generate` は設定の DDL を内包 PGlite に適用し、テーブルごとに index-friendly な CRUD テンプレートを生成する。
 
 ```jsonc
-// tysql.json
+// trisql.json
 { "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
 ```
 

@@ -7,7 +7,7 @@
  *
  * offset はすべて UTF-16 コードユニット単位の文字列 index。
  */
-import { TysqlError } from "./errors.ts";
+import { TrisqlError } from "./errors.ts";
 
 export type Sigil = "$" | "^" | "!" | "%" | ":";
 
@@ -72,7 +72,7 @@ export function scan(source: string): Segment[] {
       if (sigilChar !== undefined && isSigil(sigilChar)) {
         const close = source.indexOf("*/", i + 3);
         if (close === -1) {
-          throw new TysqlError("scan/unterminated-directive", "Unterminated directive comment.", {
+          throw new TrisqlError("scan/unterminated-directive", "Unterminated directive comment.", {
             start: i,
             end: length,
           });
@@ -117,7 +117,7 @@ export function skipQuoted(source: string, start: number, quote: string, backsla
     }
     i += 1;
   }
-  throw new TysqlError("scan/unterminated-string", "Unterminated quoted string.", { start, end: source.length });
+  throw new TrisqlError("scan/unterminated-string", "Unterminated quoted string.", { start, end: source.length });
 }
 
 /** `start` は `$` の位置。dollar quoting ならその終端の次の位置、そうでなければ undefined。 */
@@ -127,7 +127,7 @@ export function skipDollarQuoted(source: string, start: number): number | undefi
   const tag = m[0];
   const close = source.indexOf(tag, start + tag.length);
   if (close === -1) {
-    throw new TysqlError("scan/unterminated-string", "Unterminated dollar-quoted string.", {
+    throw new TrisqlError("scan/unterminated-string", "Unterminated dollar-quoted string.", {
       start,
       end: source.length,
     });
@@ -153,5 +153,5 @@ export function skipBlockComment(source: string, start: number): number {
     }
     i += 1;
   }
-  throw new TysqlError("scan/unterminated-comment", "Unterminated block comment.", { start, end: source.length });
+  throw new TrisqlError("scan/unterminated-comment", "Unterminated block comment.", { start, end: source.length });
 }

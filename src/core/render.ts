@@ -1,7 +1,7 @@
 /**
  * テンプレートとパラメータから SQL とバインド値を作る。
  */
-import { TysqlError } from "./errors.ts";
+import { TrisqlError } from "./errors.ts";
 import { evaluateExpr } from "./expr.ts";
 import type { Node, Template, VariableNode } from "./parse.ts";
 import { ALL, DEFAULT, isLikePattern } from "./values.ts";
@@ -73,9 +73,9 @@ function renderNodes(nodes: Node[], params: Params, state: State): void {
         if (items.length === 0) {
           if (!state.skip) {
             if (/\bSET\s*$/i.test(state.out))
-              throw new TysqlError("render/empty-set", "Empty 'for' block is not allowed in SET clause.", node);
+              throw new TrisqlError("render/empty-set", "Empty 'for' block is not allowed in SET clause.", node);
             if (/\bVALUES\s*$/i.test(state.out))
-              throw new TysqlError("render/empty-values", "Empty 'for' block is not allowed in VALUES clause.", node);
+              throw new TrisqlError("render/empty-values", "Empty 'for' block is not allowed in VALUES clause.", node);
           }
           state.skip = true;
           break;
@@ -143,19 +143,19 @@ function renderVariable(node: VariableNode, params: Params, state: State): void 
       }
       if (node.collection) {
         if (!Array.isArray(value))
-          throw new TysqlError("render/collection-type", `Collection binding '${pathText}' requires an array.`, {
+          throw new TrisqlError("render/collection-type", `Collection binding '${pathText}' requires an array.`, {
             ...node,
             details: { value },
           });
         if (value.length === 0)
-          throw new TysqlError(
+          throw new TrisqlError(
             "render/collection-empty",
             `Collection binding '${pathText}' does not allow an empty array.`,
             node,
           );
         for (const element of value) {
           if (element === DEFAULT || element === ALL || isLikePattern(element)) {
-            throw new TysqlError(
+            throw new TrisqlError(
               "render/collection-element",
               `DEFAULT, ALL and LIKE helpers are not allowed inside collection binding '${pathText}'.`,
               node,
@@ -190,7 +190,7 @@ function renderVariable(node: VariableNode, params: Params, state: State): void 
         state.out += String(value);
         return;
       }
-      throw new TysqlError("render/literal-type", `Literal '${pathText}' must be a string or a number.`, {
+      throw new TrisqlError("render/literal-type", `Literal '${pathText}' must be a string or a number.`, {
         ...node,
         details: { value },
       });
@@ -198,7 +198,10 @@ function renderVariable(node: VariableNode, params: Params, state: State): void 
     case "raw": {
       if (value === MISSING) throw missing(node, pathText);
       if (typeof value !== "string")
-        throw new TysqlError("render/raw-type", `Raw '${pathText}' must be a string.`, { ...node, details: { value } });
+        throw new TrisqlError("render/raw-type", `Raw '${pathText}' must be a string.`, {
+          ...node,
+          details: { value },
+        });
       state.out += value;
       return;
     }
@@ -216,8 +219,8 @@ function placeholder(state: State, reuseKey: string | null, value: unknown): str
   return `$${index}`;
 }
 
-function missing(node: VariableNode, pathText: string): TysqlError {
-  return new TysqlError("render/missing-parameter", `Missing query parameter: ${pathText}`, {
+function missing(node: VariableNode, pathText: string): TrisqlError {
+  return new TrisqlError("render/missing-parameter", `Missing query parameter: ${pathText}`, {
     start: node.start,
     end: node.end,
     details: { parameter: pathText },
@@ -243,21 +246,21 @@ function lookupItems(params: Params, path: string[]): unknown[] {
   const pathText = path.join(".");
   const value = lookup(params, path);
   if (value === MISSING)
-    throw new TysqlError("render/missing-parameter", `Missing query parameter: ${pathText}`, {
+    throw new TrisqlError("render/missing-parameter", `Missing query parameter: ${pathText}`, {
       details: { parameter: pathText },
     });
   if (Array.isArray(value)) return value;
   if (value !== null && typeof value === "object") {
     return Object.entries(value as Record<string, unknown>).map(([name, v]) => {
       if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
-        throw new TysqlError("render/for-key", `Key '${name}' of '${pathText}' is not a valid SQL identifier.`, {
+        throw new TrisqlError("render/for-key", `Key '${name}' of '${pathText}' is not a valid SQL identifier.`, {
           details: { parameter: pathText, key: name },
         });
       }
       return { name, value: v };
     });
   }
-  throw new TysqlError("render/for-type", `'${pathText}' must be an array or an object for a 'for' block.`, {
+  throw new TrisqlError("render/for-type", `'${pathText}' must be an array or an object for a 'for' block.`, {
     details: { parameter: pathText, value },
   });
 }

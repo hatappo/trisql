@@ -1,12 +1,12 @@
 /**
  * バインド値として渡せる特殊値。
  */
-export const DEFAULT: unique symbol = Symbol.for("tysql.DEFAULT");
-export const ALL: unique symbol = Symbol.for("tysql.ALL");
+export const DEFAULT: unique symbol = Symbol.for("trisql.DEFAULT");
+export const ALL: unique symbol = Symbol.for("trisql.ALL");
 export type DefaultValue = typeof DEFAULT;
 export type AllValue = typeof ALL;
 
-const likeBrand: unique symbol = Symbol.for("tysql.LikePattern");
+const likeBrand: unique symbol = Symbol.for("trisql.LikePattern");
 export type LikeMode = "startsWith" | "endsWith" | "contains";
 
 export class LikePattern {

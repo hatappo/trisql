@@ -1,5 +1,5 @@
 {
-  "name": "tysql",
+  "name": "trisql",
   "version": "0.0.0",
   "description": "2-way SQL templates as typed TypeScript queries, powered by TypeScript 7.1 content mappers.",
   "license": "MIT",
@@ -63,6 +63,6 @@
     }
   },
   "bin": {
-    "tysql": "./src/cli.ts"
+    "trisql": "./src/cli.ts"
   }
 }

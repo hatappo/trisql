@@ -61,18 +61,18 @@ describe("pg describer over pglite-socket", () => {
     assert.equal(renderParams(dml.params), "{ id: number }");
   });
 
-  it("the mapper uses databaseUrl from tysql.json", async () => {
+  it("the mapper uses databaseUrl from trisql.json", async () => {
     // ソケットサーバーは同時 1 接続なので、先に pg 側の接続を閉じる
     await pg.close();
-    const dir = mkdtempSync(join(tmpdir(), "tysql-pg-"));
+    const dir = mkdtempSync(join(tmpdir(), "trisql-pg-"));
     const handlers = new MapperHandlers();
     try {
       writeFileSync(
-        join(dir, "tysql.json"),
-        JSON.stringify({ databaseUrl: ["$", "{TYSQL_TEST_DATABASE_URL}"].join("") }),
+        join(dir, "trisql.json"),
+        JSON.stringify({ databaseUrl: ["$", "{TRISQL_TEST_DATABASE_URL}"].join("") }),
       );
       writeFileSync(join(dir, "package.json"), "{}");
-      process.env.TYSQL_TEST_DATABASE_URL = url;
+      process.env.TRISQL_TEST_DATABASE_URL = url;
       handlers.openProject({ projectHandle: "pg", configFileName: join(dir, "tsconfig.json") });
       const t = await handlers.transform({
         fileName: join(dir, "q.sql"),
