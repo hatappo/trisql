@@ -1,7 +1,18 @@
 /**
  * 内包 PGlite による Describer。DDL を適用した上で Parse / Describe / Sync を送る。
  */
-import type { PGlite } from "@electric-sql/pglite";
+/**
+ * PGlite のうち使う部分だけの構造型。`@electric-sql/pglite` の型を公開 API に漏らさない
+ * （利用側の tsc が PGlite の .d.ts を検査してしまうため）。
+ */
+export type PgliteLike = {
+  waitReady: Promise<void>;
+  exec(sql: string): Promise<unknown>;
+  query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
+  execProtocol(message: Uint8Array): Promise<{ messages: unknown[] }>;
+  close(): Promise<void>;
+};
+
 import { TrisqlError } from "../core/errors.ts";
 import { type Described, type DescribedColumn, DescribeError, type Describer } from "./describer.ts";
 
@@ -12,9 +23,9 @@ type Backend = {
 };
 
 export async function openPgliteDescriber(ddl: string[]): Promise<Describer> {
-  let mod: typeof import("@electric-sql/pglite");
+  let mod: { PGlite: new () => PgliteLike };
   try {
-    mod = await import("@electric-sql/pglite");
+    mod = (await import("@electric-sql/pglite")) as unknown as { PGlite: new () => PgliteLike };
   } catch (e) {
     throw new TrisqlError(
       "describer/pglite-missing",
@@ -22,17 +33,17 @@ export async function openPgliteDescriber(ddl: string[]): Promise<Describer> {
       { cause: e },
     );
   }
-  const db: PGlite = new mod.PGlite();
+  const db: PgliteLike = new mod.PGlite();
   await db.waitReady;
   for (const sql of ddl) await db.exec(sql);
   return new PgliteDescriber(db);
 }
 
 export class PgliteDescriber implements Describer {
-  readonly #db: PGlite;
+  readonly #db: PgliteLike;
   /** execProtocol の応答が混ざらないよう、呼び出しを直列にする */
   #turn: Promise<unknown> = Promise.resolve();
-  constructor(db: PGlite) {
+  constructor(db: PgliteLike) {
     this.#db = db;
   }
 
