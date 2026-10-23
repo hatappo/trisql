@@ -62,6 +62,10 @@ npx trisql generate                          # write CRUD templates into sql/<sc
 
 With a bundler, add the plugin instead of the Node preload: `trisql/esbuild` (also for `Bun.build`) or `trisql/vite`.
 
+## Experimental API
+
+`trisql/experimental` exposes the analysis and generator internals (`loadConfig`, `openDescriber`, `analyze`, `introspect`, `generateCrud`, `writeCrud`, ...) for tools such as scaffolders and code generators. It is outside semver and may change in any release; pin the version if you depend on it.
+
 ## Development
 
 ```sh

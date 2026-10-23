@@ -62,6 +62,10 @@ npx trisql generate                          # CRUD テンプレートを sql/<s
 
 バンドラを使う場合は Node のプリロードの代わりにプラグインを追加する: `trisql/esbuild`（`Bun.build` も同じ）または `trisql/vite`。
 
+## 実験的 API
+
+`trisql/experimental` は、スキャフォールダやコード生成器などの外部ツール向けに、解析と生成の内部 API（`loadConfig`、`openDescriber`、`analyze`、`introspect`、`generateCrud`、`writeCrud` など）を公開する。semver の対象外で、どのリリースでも変わりうるので、依存する場合は版を固定すること。
+
 ## 開発
 
 ```sh

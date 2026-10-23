@@ -1,14 +1,5 @@
-export type { Analysis, Column as AnalyzedColumn, Diagnostic, ParamNode } from "./analysis/analyze.ts";
-// --- 生成器・解析 API（スキャフォールダなど外部ツール向け） -------------------------------
-export { analyze } from "./analysis/analyze.ts";
-export { type Config, loadConfig } from "./analysis/config.ts";
-export type { Described, DescribedColumn, Describer } from "./analysis/describer.ts";
-export { DescribeError } from "./analysis/describer.ts";
-export { renderParams, renderRow, virtualModule } from "./analysis/module-types.ts";
-export { describerError, openDescriber } from "./analysis/open.ts";
-export { openPgDescriber } from "./analysis/pg.ts";
-export { openPgliteDescriber } from "./analysis/pglite.ts";
-export type { Cardinality } from "./analysis/tree.ts";
+// trisql のランタイム API。`.sql` の import が返す Query と、テンプレートの解析・描画。
+// 解析と生成の API は不安定なので `trisql/experimental` から別に公開している。
 export { TrisqlError } from "./core/errors.ts";
 export type { Branch, ForNode, IfNode, Node, Template, TextNode, VariableNode } from "./core/parse.ts";
 export { parse } from "./core/parse.ts";
@@ -16,8 +7,5 @@ export type { Params, Rendered } from "./core/render.ts";
 export { render } from "./core/render.ts";
 export type { AllValue, DefaultValue } from "./core/values.ts";
 export { ALL, DEFAULT, LIKE_CONTAINS, LIKE_ENDS_WITH, LIKE_STARTS_WITH, LikePattern } from "./core/values.ts";
-export { type GeneratedQuery, generateCrud } from "./generate/crud.ts";
-export { type Column, introspect, type Table } from "./generate/introspect.ts";
-export { barrel, crudDir, exportName, writeCrud } from "./generate/write.ts";
 export type { BoundQuery, ParamsArg, Query, QueryClient, QueryDefinition } from "./runtime/query.ts";
 export { defineQuery } from "./runtime/query.ts";
