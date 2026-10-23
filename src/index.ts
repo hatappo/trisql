@@ -17,7 +17,6 @@ export { render } from "./core/render.ts";
 export type { AllValue, DefaultValue } from "./core/values.ts";
 export { ALL, DEFAULT, LIKE_CONTAINS, LIKE_ENDS_WITH, LIKE_STARTS_WITH, LikePattern } from "./core/values.ts";
 export { type GeneratedQuery, generateCrud } from "./generate/crud.ts";
-export { declarationPath, writeDeclarations } from "./generate/declarations.ts";
 export { type Column, introspect, type Table } from "./generate/introspect.ts";
 export { barrel, crudDir, exportName, writeCrud } from "./generate/write.ts";
 export type { BoundQuery, ParamsArg, Query, QueryClient, QueryDefinition } from "./runtime/query.ts";
