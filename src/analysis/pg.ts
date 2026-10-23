@@ -3,7 +3,7 @@
  * `pg` は公開の describe API を持たないが、`client.query` に "submittable" を渡せるので、
  * 自前で Parse + Describe + Sync を流して応答を拾う（pg-cursor と同じ仕組み）。
  */
-import { TysqlError } from "../core/errors.ts";
+import { TrisqlError } from "../core/errors.ts";
 import { type Described, type DescribedColumn, DescribeError, type Describer } from "./describer.ts";
 
 type Connection = {
@@ -43,7 +43,7 @@ export async function openPgDescriber(url: string): Promise<Describer> {
   try {
     pg = (await import("pg")).default as unknown as typeof pg;
   } catch (e) {
-    throw new TysqlError("describer/pg-missing", `"databaseUrl" needs the pg driver: npm install pg`, { cause: e });
+    throw new TrisqlError("describer/pg-missing", `"databaseUrl" needs the pg driver: npm install pg`, { cause: e });
   }
   const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: CONNECT_TIMEOUT_MS });
   // アイドル中の切断はイベントで通知される。聞いていないとプロセスが落ちる

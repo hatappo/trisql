@@ -14,7 +14,7 @@ const fixture = join(root, "test", "fixtures", "bundler");
 const out = join(fixture, "dist");
 const expected = JSON.stringify({ sql: "SELECT id, email FROM users WHERE id = $1", params: [3] });
 
-/** fixture には package.json を置かないので、出力を node で実行すると `tysql` はリポジトリ自身に解決される */
+/** fixture には package.json を置かないので、出力を node で実行すると `trisql` はリポジトリ自身に解決される */
 function run(file: string): string {
   return execFileSync(process.execPath, [file], { encoding: "utf8", cwd: root }).trim();
 }
@@ -31,7 +31,7 @@ describe("bundler plugins", () => {
       platform: "node",
       format: "esm",
       outfile,
-      external: ["tysql"],
+      external: ["trisql"],
       plugins: [esbuildPlugin()],
       logLevel: "silent",
     });
@@ -47,7 +47,7 @@ describe("bundler plugins", () => {
       configFile: false,
       logLevel: "silent",
       plugins: [vitePlugin()],
-      build: { ssr: "main.ts", outDir, emptyOutDir: true, rollupOptions: { external: ["tysql"] } },
+      build: { ssr: "main.ts", outDir, emptyOutDir: true, rollupOptions: { external: ["trisql"] } },
     });
     const file = join(outDir, "main.js");
     const code = readFileSync(file, "utf8");

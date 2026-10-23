@@ -1,8 +1,8 @@
 /**
- * tysql のエラー。テンプレート上の位置（UTF-16 のコードユニット offset）を持てる。
+ * trisql のエラー。テンプレート上の位置（UTF-16 のコードユニット offset）を持てる。
  */
-export class TysqlError extends Error {
-  override readonly name = "TysqlError";
+export class TrisqlError extends Error {
+  override readonly name = "TrisqlError";
   readonly code: string;
   readonly start: number | undefined;
   readonly end: number | undefined;

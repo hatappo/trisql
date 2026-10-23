@@ -7,12 +7,12 @@ import { sqlModuleSource } from "../src/runtime/loader.ts";
 describe("register", () => {
   it("sqlModuleSource emits a defineQuery module", () => {
     const src = sqlModuleSource("/x/q.sql", "SELECT /*$id*/1");
-    assert.match(src, /import \{ defineQuery \} from "tysql";/);
+    assert.match(src, /import \{ defineQuery \} from "trisql";/);
     assert.match(src, /export const raw = "SELECT \/\*\$id\*\/1";/);
     assert.match(src, /defineQuery\(\{ raw, source: "\/x\/q\.sql" \}\)/);
   });
 
-  it("node --import tysql/register loads .sql files", () => {
+  it("node --import trisql/register loads .sql files", () => {
     const register = fileURLToPath(new URL("../src/register.ts", import.meta.url));
     const main = fileURLToPath(new URL("./fixtures/register-main.ts", import.meta.url));
     const out = execFileSync(process.execPath, ["--import", register, main], { encoding: "utf8" });

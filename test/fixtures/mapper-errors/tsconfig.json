@@ -9,5 +9,5 @@
     "types": []
   },
   "include": ["main.ts"],
-  "contentMappers": [{ "package": "tysql", "extensions": [".sql"] }]
+  "contentMappers": [{ "package": "trisql", "extensions": [".sql"] }]
 }

@@ -10,7 +10,7 @@ import { type Config, loadConfig } from "../analysis/config.ts";
 import type { Describer } from "../analysis/describer.ts";
 import { virtualModule } from "../analysis/module-types.ts";
 import { describerError, openDescriber } from "../analysis/open.ts";
-import { TysqlError } from "../core/errors.ts";
+import { TrisqlError } from "../core/errors.ts";
 import { parse } from "../core/parse.ts";
 
 export type MapperDiagnostic = { messageText: string; start: number; length: number; code: number };
@@ -31,9 +31,9 @@ const IMPLEMENTATION = 32;
 export class MapperHandlers {
   readonly #projects = new Map<string, Project>();
 
-  initialize(params: unknown): { protocolVersion: number; positionEncoding: "utf-16"; diagnosticSource: "tysql" } {
+  initialize(params: unknown): { protocolVersion: number; positionEncoding: "utf-16"; diagnosticSource: "trisql" } {
     const { protocolVersion } = (params ?? {}) as { protocolVersion?: number };
-    return { protocolVersion: protocolVersion ?? 1, positionEncoding: "utf-16", diagnosticSource: "tysql" };
+    return { protocolVersion: protocolVersion ?? 1, positionEncoding: "utf-16", diagnosticSource: "trisql" };
   }
 
   openProject(params: unknown): { configIdentity: string; watchedFiles: string[]; optionDiagnostics: unknown[] } {
@@ -54,7 +54,7 @@ export class MapperHandlers {
       .digest("hex");
     const optionDiagnostics = Object.keys(p.options ?? {}).map((key) => ({
       path: [key],
-      messageText: `tysql reads its settings from tysql.json, not from the content mapper's options; move "${key}" there.`,
+      messageText: `trisql reads its settings from trisql.json, not from the content mapper's options; move "${key}" there.`,
       code: DIAG.config,
     }));
     return { configIdentity: identity, watchedFiles, optionDiagnostics };
@@ -71,13 +71,13 @@ export class MapperHandlers {
         DIAG.config,
       );
     if (project.error !== null || !project.config)
-      return fallback(sql, project.error ?? "tysql: no configuration.", DIAG.config);
+      return fallback(sql, project.error ?? "trisql: no configuration.", DIAG.config);
 
     let template: ReturnType<typeof parse>;
     try {
       template = parse(sql);
     } catch (e) {
-      if (e instanceof TysqlError) return fallback(sql, e.message, DIAG.parse, e.start ?? 0, e.end ?? 1);
+      if (e instanceof TrisqlError) return fallback(sql, e.message, DIAG.parse, e.start ?? 0, e.end ?? 1);
       throw e;
     }
 
@@ -115,7 +115,7 @@ function toMapperDiagnostic(d: Diagnostic): MapperDiagnostic {
 /** 解析できなかったファイルの姿: 型は unknown、診断を 1 つ */
 function fallback(sql: string, message: string, code: number, start = 0, end = 1): Transformed {
   const text = [
-    `import type { Query } from "tysql";`,
+    `import type { Query } from "trisql";`,
     `export type Params = unknown;`,
     `export type Row = unknown;`,
     `export declare const raw: string;`,

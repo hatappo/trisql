@@ -1,5 +1,5 @@
 {
-  "name": "tysql-spike-pglite",
+  "name": "trisql-spike-pglite",
   "private": true,
   "type": "module",
   "devDependencies": {

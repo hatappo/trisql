@@ -1,5 +1,5 @@
 /**
- * 設定ファイル `tysql.json`。ファイルのディレクトリから上へ辿って最初に見つかったものを使う。
+ * 設定ファイル `trisql.json`。ファイルのディレクトリから上へ辿って最初に見つかったものを使う。
  *
  *   {
  *     "schema": ["db/migrations/*.sql"],      // 内包 PGlite に適用する DDL（glob、root 相対）
@@ -9,9 +9,9 @@
  */
 import { existsSync, globSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { TysqlError } from "../core/errors.ts";
+import { TrisqlError } from "../core/errors.ts";
 
-export const CONFIG_FILE = "tysql.json";
+export const CONFIG_FILE = "trisql.json";
 
 export type Config = {
   /** 設定ファイルのパス。見つからなければ null */
@@ -45,7 +45,7 @@ export function loadConfig(fromDir: string, env: Record<string, string | undefin
     try {
       parsed = JSON.parse(readFileSync(file, "utf8")) as ConfigFile;
     } catch (e) {
-      throw new TysqlError("config/invalid", `${file}: ${(e as Error).message}`, { cause: e });
+      throw new TrisqlError("config/invalid", `${file}: ${(e as Error).message}`, { cause: e });
     }
   }
   const patterns = parsed.schema === undefined ? [] : Array.isArray(parsed.schema) ? parsed.schema : [parsed.schema];
@@ -56,7 +56,7 @@ export function loadConfig(fromDir: string, env: Record<string, string | undefin
   const databaseUrl =
     parsed.databaseUrl === undefined ? null : substituteEnv(parsed.databaseUrl, env, file ?? CONFIG_FILE);
   if (patterns.length > 0 && schema.length === 0) {
-    throw new TysqlError("config/no-schema-files", `${file}: "schema" matched no files: ${patterns.join(", ")}`);
+    throw new TrisqlError("config/no-schema-files", `${file}: "schema" matched no files: ${patterns.join(", ")}`);
   }
   const generate = {
     out: resolve(root, parsed.generate?.out ?? "sql"),
@@ -69,7 +69,7 @@ function substituteEnv(value: string, env: Record<string, string | undefined>, f
   return value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_, name: string) => {
     const v = env[name];
     if (v === undefined)
-      throw new TysqlError("config/missing-env", `${file}: environment variable ${name} is not set.`);
+      throw new TrisqlError("config/missing-env", `${file}: environment variable ${name} is not set.`);
     return v;
   });
 }

@@ -1,5 +1,5 @@
 /**
- * `node --import tysql/register main.ts` で `.sql` の import を有効にする。
+ * `node --import trisql/register main.ts` で `.sql` の import を有効にする。
  * Node の同期ロードフック（module.registerHooks）で `.sql` を JS モジュールに置き換える。
  */
 import { readFileSync } from "node:fs";

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parse, TysqlError } from "../src/index.ts";
+import { parse, TrisqlError } from "../src/index.ts";
 
 describe("parse", () => {
   it("records spans of variables, names and samples", () => {
@@ -17,50 +17,50 @@ describe("parse", () => {
   it("requires a sample directly after the comment", () => {
     assert.throws(
       () => parse("SELECT /*$id*/ 1"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/missing-sample",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/missing-sample",
     );
   });
 
   it("rejects kebab-case names", () => {
     assert.throws(
       () => parse("SELECT /*$order-by*/1"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/invalid-name",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/invalid-name",
     );
   });
 
   it("rejects default-to on literal and raw", () => {
     assert.throws(
       () => parse("SELECT /*^v default-to */1"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/default-to-sigil",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/default-to-sigil",
     );
   });
 
   it("rejects nested for and unterminated blocks", () => {
     assert.throws(
       () => parse("/*%for a in xs*/ /*%for b in ys*/ /*%end*/ /*%end*/"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/nested-for",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/nested-for",
     );
     assert.throws(
       () => parse("/*%if a*/ x"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/unterminated-block",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/unterminated-block",
     );
     assert.throws(
       () => parse("x /*%end*/"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/unexpected-directive",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/unexpected-directive",
     );
   });
 
   it("rejects elseif after else", () => {
     assert.throws(
       () => parse("/*%if a*/ x /*%else*/ y /*%elseif b*/ z /*%end*/"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/else-order",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/else-order",
     );
   });
 
   it("rejects declarations after the SQL starts", () => {
     assert.throws(
       () => parse("SELECT 1 /*:doc x */"),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/declaration-position",
+      (e: unknown) => e instanceof TrisqlError && e.code === "parse/declaration-position",
     );
   });
 

@@ -1,13 +1,13 @@
 # bisql との違い
 
-tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ライブラリ）の思想を TypeScript に移植したもの。
+trisql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ライブラリ）の思想を TypeScript に移植したもの。
 共通する思想は「valid な SQL ファイルからクエリ関数を生成する」「クエリビルダもデータマッパも持たない」「生成 CRUD も手書き SQL も同じ形」の 3 点。
 
 この文書は **違い** だけを扱う。仕様の全体は [2way-sql_ja.md](./2way-sql_ja.md) を参照。
 
 ## 1. 位置づけの違い
 
-| 観点 | bisql | tysql |
+| 観点 | bisql | trisql |
 |---|---|---|
 | 言語 | Clojure（レンダラは cljc で ClojureScript 共用） | TypeScript |
 | 型の出どころ | 宣言コメント（`:malli/in` `:malli/out`）。生成 CRUD には自動付与、手書きは任意 | 型チェック時に DB（既定は内包 PGlite、任意で実 DB）に Describe して導出 |
@@ -19,7 +19,7 @@ tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ラ�
 
 ## 2. ファイル単位と命名
 
-| 観点 | bisql | tysql |
+| 観点 | bisql | trisql |
 |---|---|---|
 | 1 ファイルのクエリ数 | 複数可。`/*:name*/` で区切る | 1 つ。`/*:name*/` は存在しない |
 | 生成 CRUD の置き場 | テーブルごとに 1 つの `crud.sql` に全クエリをまとめる | テーブルごとのディレクトリに 1 クエリ 1 ファイルで展開し、barrel `index.ts` を生成 |
@@ -29,7 +29,7 @@ tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ラ�
 
 ## 3. 宣言コメント
 
-| 宣言 | bisql | tysql |
+| 宣言 | bisql | trisql |
 |---|---|---|
 | `name` | 複数クエリの区切り | なし |
 | `doc` | 任意。平文または EDN | 任意。平文のみ |
@@ -40,7 +40,7 @@ tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ラ�
 
 ## 4. パラメータとレンダリング
 
-| 観点 | bisql | tysql |
+| 観点 | bisql | trisql |
 |---|---|---|
 | パラメータ名 | Clojure キーワード。kebab-case 可（`/*$order-by*/`） | JS 識別子。camelCase 推奨。kebab-case 不可 |
 | 入れ子参照 | dot path（`item.value`）。キーワード / 文字列 / シンボルのいずれでも引ける | dot path。オブジェクトのプロパティのみ |
@@ -55,7 +55,7 @@ tysql は [bisql](https://github.com/hatappo/bisql)（Clojure 製 2-way SQL ラ�
 
 ## 5. 制御構文
 
-| 観点 | bisql | tysql |
+| 観点 | bisql | trisql |
 |---|---|---|
 | 真偽判定 | Clojure の truthiness（`nil` と `false` だけが偽） | `null` / `undefined` / `false` だけが偽（JS の truthiness は採らない） |
 | 比較 `=` | Clojure の値等価（コレクションも比較できる） | `===`。オブジェクト同士は未定義 |
@@ -71,7 +71,7 @@ bisql:
 2. `(defquery)` がマクロ展開時に SQL を読み、宣言をメタデータとして var に付ける
 3. 実行時に Malli で検証する（モード設定による）
 
-tysql:
+trisql:
 
 1. 型チェック時、content mapper が各 `.sql` を解析する。DDL を内包 PGlite に適用（または実 DB に接続）し、Parse/Describe とカタログ照会でパラメータ型、列型、nullability を得る
 2. その結果を仮想 `.ts` モジュールとして tsc に返す。`Params` と `Row` が import 側に現れる
@@ -79,7 +79,7 @@ tysql:
 
 ## 7. 実装上の違い
 
-| 観点 | bisql | tysql |
+| 観点 | bisql | trisql |
 |---|---|---|
 | パーサ | 正規表現ベース。文字列リテラル内の `/*$` などは考慮しない | 位置情報付きトークナイザ。文字列、`--`、`$$` dollar quoting、`E''` を読み飛ばす。content mapper の span map と診断に offset が必要 |
 | レンダラ | 解析結果からレンダラ関数を `eval` またはインタプリタで生成 | 純粋関数 `render(template, params)` |

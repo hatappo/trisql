@@ -10,7 +10,7 @@
  * オペランドはパラメータ参照のみ。裸の識別子は真偽判定。
  * 偽は null / undefined / false のみ。比較は === による。
  */
-import { TysqlError } from "./errors.ts";
+import { TrisqlError } from "./errors.ts";
 
 export type Expr =
   | ExprRef
@@ -65,7 +65,7 @@ function tokenize(expression: string, offset: number): Token[] {
       i += text.length;
       continue;
     }
-    throw new TysqlError("expr/unexpected-token", `Unexpected character '${ch}' in condition.`, {
+    throw new TrisqlError("expr/unexpected-token", `Unexpected character '${ch}' in condition.`, {
       start: offset + i,
       end: offset + i + 1,
       details: { expression },
@@ -77,7 +77,7 @@ function tokenize(expression: string, offset: number): Token[] {
 export function parseExpr(expression: string, offset = 0): Expr {
   const trimmed = expression.trim();
   if (trimmed === "") {
-    throw new TysqlError("expr/blank", "Condition must not be blank.", {
+    throw new TrisqlError("expr/blank", "Condition must not be blank.", {
       start: offset,
       end: offset + expression.length,
     });
@@ -86,7 +86,7 @@ export function parseExpr(expression: string, offset = 0): Expr {
   let pos = 0;
   const peek = (): Token => tokens[pos] ?? { type: "end", text: "", pos: offset + expression.length };
   const fail = (message: string): never => {
-    throw new TysqlError("expr/syntax", message, {
+    throw new TrisqlError("expr/syntax", message, {
       start: offset,
       end: offset + expression.length,
       details: { expression },
@@ -163,7 +163,7 @@ export function evaluateExpr(expr: Expr, resolve: (path: string[]) => unknown): 
           return left !== right;
         default: {
           if (left === null || left === undefined || right === null || right === undefined) {
-            throw new TysqlError(
+            throw new TrisqlError(
               "expr/null-ordering",
               `Ordering comparison '${expr.op}' does not accept null or undefined.`,
               {

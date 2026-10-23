@@ -1,4 +1,4 @@
-# tysql 2-way SQL Specification
+# trisql 2-way SQL Specification
 
 Status: design draft (2026-10-23). Updated as the implementation lands.
 For the differences from bisql only, see [differences-from-bisql.md](./differences-from-bisql.md).
@@ -95,7 +95,7 @@ Only `$` binds accept it.
 
 ### 3.6 Special values
 
-- `DEFAULT`, `ALL`: unique symbols exported by tysql. Passing one renders the SQL keyword `DEFAULT` / `ALL` instead of `$n`. Scalar `$` binds only.
+- `DEFAULT`, `ALL`: unique symbols exported by trisql. Passing one renders the SQL keyword `DEFAULT` / `ALL` instead of `$n`. Scalar `$` binds only.
 - `LIKE_STARTS_WITH(s)`, `LIKE_ENDS_WITH(s)`, `LIKE_CONTAINS(s)`: bind a value with `%`, `_` and `\` escaped and `%` added in the right place. Write `ESCAPE '\'` on the SQL side.
 
 ```sql
@@ -234,10 +234,10 @@ sql/public/users/crud/index.ts   // export { default as getById } from "./get-by
 
 ## 9. CRUD generation
 
-`tysql generate` applies the configured DDL to the embedded PGlite and writes index-friendly CRUD templates per table.
+`trisql generate` applies the configured DDL to the embedded PGlite and writes index-friendly CRUD templates per table.
 
 ```jsonc
-// tysql.json
+// trisql.json
 { "schema": ["db/schema.sql"], "generate": { "out": "sql", "schemas": ["public"] } }
 ```
 

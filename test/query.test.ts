@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
-import { defineQuery, TysqlError } from "../src/index.ts";
+import { defineQuery, TrisqlError } from "../src/index.ts";
 
 describe("defineQuery", () => {
   const db = new PGlite();
@@ -29,9 +29,9 @@ describe("defineQuery", () => {
     assert.equal(await byId.maybeOne(db, { id: 99 }), null);
     await assert.rejects(
       byId.one(db, { id: 99 }),
-      (e: unknown) => e instanceof TysqlError && e.code === "query/cardinality" && e.message.startsWith("by-id.sql: "),
+      (e: unknown) => e instanceof TrisqlError && e.code === "query/cardinality" && e.message.startsWith("by-id.sql: "),
     );
-    await assert.rejects(all.maybeOne(db), (e: unknown) => e instanceof TysqlError && e.code === "query/cardinality");
+    await assert.rejects(all.maybeOne(db), (e: unknown) => e instanceof TrisqlError && e.code === "query/cardinality");
     const insert = defineQuery<{ id: number; email: string }, never>({
       raw: "INSERT INTO users (id, email) VALUES (/*$id*/3, /*$email*/'c@example.com')",
     });
@@ -54,11 +54,12 @@ describe("defineQuery", () => {
   it("errors carry the source", () => {
     assert.throws(
       () => byId.render({} as { id: number }),
-      (e: unknown) => e instanceof TysqlError && e.message === "by-id.sql: Missing query parameter: id",
+      (e: unknown) => e instanceof TrisqlError && e.message === "by-id.sql: Missing query parameter: id",
     );
     assert.throws(
       () => defineQuery({ raw: "SELECT /*$x*/ 1", source: "bad.sql" }),
-      (e: unknown) => e instanceof TysqlError && e.code === "parse/missing-sample" && e.message.startsWith("bad.sql: "),
+      (e: unknown) =>
+        e instanceof TrisqlError && e.code === "parse/missing-sample" && e.message.startsWith("bad.sql: "),
     );
   });
 });

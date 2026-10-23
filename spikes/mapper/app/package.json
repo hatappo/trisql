@@ -1,9 +1,9 @@
 {
-  "name": "tysql-spike-app",
+  "name": "trisql-spike-app",
   "private": true,
   "type": "module",
   "devDependencies": {
     "typescript": "7.1.0-dev.20261019.1",
-    "tysql-spike-mapper": "file:../mapper-pkg"
+    "trisql-spike-mapper": "file:../mapper-pkg"
   }
 }

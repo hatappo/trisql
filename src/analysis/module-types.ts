@@ -149,7 +149,7 @@ export type VirtualModule = { text: string; mappings: number[][] };
 
 export function virtualModule(analysis: Analysis, raw: string, doc: string | null): VirtualModule {
   const b = new Builder();
-  b.write(`import type { AllValue, DefaultValue, LikePattern, Query } from "tysql";\n`);
+  b.write(`import type { AllValue, DefaultValue, LikePattern, Query } from "trisql";\n`);
   b.write("export type Params = ");
   writeParams(b, analysis.params);
   b.write(";\nexport type Row = ");

@@ -1,6 +1,6 @@
-# tysql
+# trisql
 
-<p align="center"><code>tysql</code>（<code>táisikl</code>、タイシクル）</p>
+<p align="center"><code>trisql</code>（<code>trάɪsɪkl</code>、トライシクル）</p>
 
 2-way SQL のテンプレートを、型付きの TypeScript クエリとして使う。[English](./README.md)
 
@@ -34,13 +34,13 @@ const user = await getUser.maybeOne(db, { id: "1" });
 必要なもの: Node 24 以上、TypeScript 7.1（beta または nightly）、スキーマの `.sql` ファイル（マイグレーション、または `pg_dump --schema-only` の出力）。
 
 ```sh
-npm install tysql pg
+npm install trisql pg
 npm install -D typescript@beta @electric-sql/pglite
 npm install -D libpg-query   # 任意。外部結合の先にある列の nullability を正確にする
 ```
 
 ```jsonc
-// tysql.json
+// trisql.json
 { "schema": ["db/schema.sql"] }
 // 内包 PGlite ではなく稼働中の DB に対して型付けするなら:
 // { "databaseUrl": "${DATABASE_URL}" }
@@ -50,17 +50,17 @@ npm install -D libpg-query   # 任意。外部結合の先にある列の nullab
 // tsconfig.json
 {
   "compilerOptions": { /* ... */ },
-  "contentMappers": [{ "package": "tysql", "extensions": [".sql"] }]
+  "contentMappers": [{ "package": "trisql", "extensions": [".sql"] }]
 }
 ```
 
 ```sh
 tsc --noEmit --runExternalCode              # 型チェック
-node --import tysql/register main.ts        # 実行（素の Node）
-npx tysql generate                          # CRUD テンプレートを sql/<schema>/<table>/crud/ に生成
+node --import trisql/register main.ts        # 実行（素の Node）
+npx trisql generate                          # CRUD テンプレートを sql/<schema>/<table>/crud/ に生成
 ```
 
-バンドラを使う場合は Node のプリロードの代わりにプラグインを追加する: `tysql/esbuild`（`Bun.build` も同じ）または `tysql/vite`。
+バンドラを使う場合は Node のプリロードの代わりにプラグインを追加する: `trisql/esbuild`（`Bun.build` も同じ）または `trisql/vite`。
 
 ## 開発
 

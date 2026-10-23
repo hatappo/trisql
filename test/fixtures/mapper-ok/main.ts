@@ -1,4 +1,4 @@
-import { ALL, LIKE_CONTAINS } from "tysql";
+import { ALL, LIKE_CONTAINS } from "trisql";
 import getUser from "./sql/get-user.sql";
 import insertUser from "./sql/insert-user.sql";
 import searchUsers from "./sql/search-users.sql";

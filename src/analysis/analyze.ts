@@ -18,7 +18,7 @@ import { type Cardinality, cardinalityOf, classifyRelations, loadParser, stateme
 
 export type Diagnostic = { message: string; start: number; end: number; code: number };
 
-/** 診断コード。content mapper が `tysql<code>` として表示する */
+/** 診断コード。content mapper が `trisql<code>` として表示する */
 export const DIAG = { parse: 1, describe: 2, config: 3 } as const;
 
 /** パラメータ型の木。葉は型の union、枝はオブジェクト、element があれば配列 */
