@@ -268,6 +268,7 @@ TypeScript 7.1 の content mapper を持たないツール（svelte-check、Type
 - 読む側の tsconfig には `allowArbitraryExtensions: true` が要る
 - TypeScript 7.1 + content mapper の環境では mapper が優先され、宣言ファイルは無視される（実験で確認済み）。両方あっても矛盾しない
 - 宣言ファイルは生成物なので、スキーマやテンプレートを変えたら `trisql generate` または `trisql declarations` で作り直す。古いままだと型が実体とずれる。これが content mapper より劣る点
+- `trisql.json` に `"declarations": { "auto": true, "include": [...] }` と書くと、content mapper が型チェック（tsc 7.1 やエディタ）のたびに `.d.sql.ts` を書き直す。内容が変わるときだけ書き、解析に失敗した文の宣言は古いまま残す。svelte-check のような TS 6 系ツールと併用するプロジェクト向けで、型チェックが作業ツリーを書き換える点は承知の上で使う
 
 ## 10. 型付け
 
