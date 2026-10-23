@@ -1,6 +1,6 @@
 {
   "name": "trisql",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "2-way SQL templates as typed TypeScript queries, powered by TypeScript 7.1 content mappers.",
   "license": "MIT",
   "type": "module",
@@ -32,7 +32,8 @@
   },
   "files": [
     "dist",
-    "README_ja.md"
+    "README_ja.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/cli.js",
