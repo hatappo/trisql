@@ -260,6 +260,15 @@ Generated queries:
 Generated columns (`GENERATED ALWAYS AS`) and `GENERATED ALWAYS AS IDENTITY` columns are not inserted.
 Multi-column names are joined with `-and-`, and `_` in column names becomes `-`.
 
+## 9.1 Declaration files (`.d.sql.ts`)
+
+For tools without the TypeScript 7.1 content mapper (svelte-check, editors or CI on TypeScript 5 / 6), trisql can write `<name>.d.sql.ts` beside each `.sql`. Its content is the same virtual module the content mapper hands to tsc (`Params`, `Row`, the default `Query`).
+
+- `trisql generate` always writes declarations for the CRUD templates it generates. Hand-written `.sql` files are covered by `"declarations": ["src/queries/*.sql"]` in `trisql.json` or by `trisql declarations <glob>`
+- The consuming tsconfig needs `allowArbitraryExtensions: true`
+- With TypeScript 7.1 and the content mapper, the mapper wins and the declaration file is ignored (verified experimentally), so having both is harmless
+- Declaration files are generated artifacts: regenerate them with `trisql generate` or `trisql declarations` after changing the schema or a template. A stale file means types that no longer match, which is where this falls short of the content mapper
+
 ## 10. Typing
 
 At type-check time the content mapper analyzes each template and derives `Params` and `Row`.
