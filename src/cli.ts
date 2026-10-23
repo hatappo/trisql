@@ -41,8 +41,8 @@ async function main(argv: string[]): Promise<number> {
   const dryRun = values["dry-run"];
   const describer = await openDescriber(config);
   try {
-    if (command === "generate") return generate(config, describer, dryRun);
-    return declarations(config, describer, dryRun, positionals.slice(1));
+    if (command === "generate") return await generate(config, describer, dryRun);
+    return await declarations(config, describer, dryRun, positionals.slice(1));
   } finally {
     await describer.close();
   }
